@@ -1,0 +1,39 @@
+:root{
+  --text-hero: 7.5rem;      /* 120px */
+  --text-display-2: 5rem;   /* 80px */
+  --text-section: 3.375rem; /* 54px */
+  --text-subsection: 2.5rem;/* 40px */
+  --text-feature: 1.6875rem;/* 27px */
+  --text-card-title: 1.5rem;/* 24px */
+  --text-body-lg: 1.125rem; /* 18px */
+  --text-body: 1rem;        /* 16px */
+  --text-btn-lg: 1rem;      /* 16px */
+  --text-btn: 0.9rem;       /* 14.4px */
+  --text-btn-sm: 0.8125rem; /* 13px */
+  --text-caption: 0.875rem; /* 14px */
+  --text-label: 0.75rem;    /* 12px */
+  --text-micro: 0.625rem;   /* 10px */
+
+  --lh-hero: 0.92;
+  --lh-display-2: 1.13;
+  --lh-section: 1.19;
+  --lh-subsection: 1.15;
+  --lh-feature: 1.37;
+  --lh-body-lg: 1.56;
+  --lh-body: 1.5;
+  --lh-btn: 1;
+  --lh-caption: 1.3;
+  --lh-label: 1.83;
+  --lh-micro: 1.5;
+
+  --ls-caption: -0.42px;
+  --ls-btn: 0.16px;
+  --ls-label: 0.96px;
+  --ls-micro: 0.225px;
+
+  --weight-regular: 400;
+  --weight-light: 300;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+}

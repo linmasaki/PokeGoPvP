@@ -1,0 +1,7 @@
+baseURL = "https://linmasaki.github.io/PokeGoPvP/"
+locale = "zh-Hant"
+title = "PokeGoPvP"
+disableKinds = ["taxonomy", "term"]
+
+[params]
+  description = "個人使用的 Pokémon GO PvP IV 查詢工具，改寫自 pvpivs.com"

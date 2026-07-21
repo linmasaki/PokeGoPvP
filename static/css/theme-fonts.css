@@ -1,0 +1,9 @@
+/* Font loading (Google Fonts <link>) happens in layouts/_default/baseof.html <head>.
+   This file only defines the family stacks. */
+:root{
+  --font-display: 'Saira', 'Open Sans', Helvetica, Arial, sans-serif;
+  --font-display-condensed: 'Saira Condensed', 'Saira', Helvetica, Arial, sans-serif;
+  --font-display-semicondensed: 'Saira SemiCondensed', 'Saira', Helvetica, Arial, sans-serif;
+  --font-ui: 'Saira', 'Open Sans', Helvetica, Arial, sans-serif;
+  --font-fallback: 'Open Sans', Helvetica, Arial, sans-serif;
+}

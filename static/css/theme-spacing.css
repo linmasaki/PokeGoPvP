@@ -1,0 +1,24 @@
+:root{
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-5: 5px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-15: 15px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-56: 56px;
+
+  --section-padding-y: var(--space-56);
+  --section-padding-x: var(--space-40);
+  --btn-padding-ghost: var(--space-16);
+  --btn-padding-accent: var(--space-24);
+
+  --container-max: 1440px;
+  --content-max: 1200px;
+}

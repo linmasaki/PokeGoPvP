@@ -1,0 +1,61 @@
+:root{
+  /* Base palette */
+  --gold: #FFC000;
+  --gold-dark: #917300;
+  --gold-text: #FFCE3E;
+  --cyan-pulse: #29ABE2;
+  --link-blue: #3860BE;
+  --teal-action: #1EAEDB;
+
+  --black: #000000;
+  --charcoal: #202020;
+  --dark-iron: #181818;
+  --near-white: #F8F8F8;
+  --mist: #E6E6E6;
+
+  --white: #FFFFFF;
+  --smoke: #F5F5F5;
+  --graphite: #494949;
+  --ash: #7D7D7D;
+  --steel: #969696;
+  --slate: #666666;
+  --iron: #555555;
+  --shadow-gray: #313131;
+
+  --overlay-black-70: rgba(0,0,0,0.7);
+  --overlay-black-50: rgba(0,0,0,0.5);
+  --overlay-black-25: rgba(0,0,0,0.25);
+
+  /* Semantic aliases */
+  --surface-canvas: var(--black);
+  --surface-elevated: var(--charcoal);
+  --surface-deep: var(--dark-iron);
+  --surface-light: var(--near-white);
+  --surface-light-alt: var(--mist);
+
+  --text-on-dark-primary: var(--white);
+  --text-on-dark-secondary: var(--smoke);
+  --text-on-dark-muted: var(--ash);
+  --text-on-dark-disabled: var(--steel);
+  --text-on-light-primary: var(--graphite);
+  --text-on-light-muted: var(--slate);
+
+  --accent-primary: var(--gold);
+  --accent-primary-hover: var(--gold-dark);
+  --accent-text: var(--gold-text);
+  --accent-info: var(--cyan-pulse);
+  --link-hover: var(--link-blue);
+  --interactive-hover: var(--teal-action);
+
+  --border-subtle-dark: var(--charcoal);
+  --border-on-dark: rgba(255,255,255,0.5);
+  --border-cookie: var(--ash);
+
+  /* Rank-tier highlights — project-specific, approved in design spec §4.1, not part of the source DS */
+  --rank-top100: var(--cyan-pulse);
+  --rank-top100-bg: rgba(41,171,226,0.16);
+  --rank-mid: #C9AD5F;
+  --rank-mid-bg: rgba(201,173,95,0.18);
+  --rank-low: #FF4444;
+  --rank-low-bg: rgba(255,68,68,0.24);
+}

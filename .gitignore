@@ -1,0 +1,14 @@
+# Hugo build output
+/public/
+/resources/_gen/
+/.hugo_build.lock
+
+# Reference material — unlicensed third-party source, kept locally for behavioral reference only
+/docs/sample/
+
+# Process artifacts — brainstorm specs/plans, not final deliverables
+/docs/superpowers/
+
+# OS cruft
+.DS_Store
+Thumbs.db

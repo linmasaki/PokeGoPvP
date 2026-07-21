@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} | {{ site.Title }}{{ end }}</title>
+  <meta name="description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ site.Params.description }}{{ end }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700&family=Saira+Condensed:wght@400;500;600;700&family=Saira+SemiCondensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ "css/theme-colors.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/theme-typography.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/theme-spacing.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/theme-effects.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/theme-fonts.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/base.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/nav.css" | relURL }}">
+</head>
+<body>
+  {{ partial "nav.html" . }}
+  <main>
+    {{ block "main" . }}{{ end }}
+  </main>
+</body>
+</html>

@@ -1,0 +1,20 @@
+:root{
+  --radius-none: 0px;
+  --radius-hairline: 1px;
+  --radius-badge: 2px;
+  --radius-switch: 20px;
+
+  --elevation-0: var(--black);
+  --elevation-1: var(--dark-iron);
+  --elevation-2: var(--charcoal);
+  --elevation-overlay: var(--overlay-black-70);
+  --elevation-fog: var(--overlay-black-50);
+  --elevation-mist: var(--overlay-black-25);
+
+  --border-hairline: 1px solid var(--border-subtle-dark);
+  --border-ghost: 1px solid var(--border-on-dark);
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-standard: 250ms;
+}
