@@ -12,3 +12,7 @@
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Claude Code local state (machine-specific permission grants, etc.)
+# .claude/launch.json itself IS tracked — this only excludes local-only files
+/.claude/settings.local.json
