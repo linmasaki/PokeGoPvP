@@ -1,0 +1,9 @@
+{
+  "name": "pokegopvp-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "extract-data": "node tools/extract-pokemon-data.mjs"
+  }
+}
