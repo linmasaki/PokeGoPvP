@@ -1,0 +1,63 @@
+.rankings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-caption);
+}
+.rankings-table thead th {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  color: var(--text-on-dark-muted);
+  text-align: left;
+  padding: var(--space-8) var(--space-12);
+  border-bottom: var(--border-hairline);
+}
+.rankings-table tbody td {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-subtle-dark);
+  color: var(--text-on-dark-primary);
+}
+.rankings-table tbody tr:nth-child(even) { background: var(--surface-elevated); }
+.rankings-table tbody tr:last-child td { border-bottom: none; }
+
+/* Rank-tier highlight — only ever applied to the pinned "your IV" row, never
+   to Top 20 rows (Top 20 is always a curated subset, uniform highlighting
+   there would carry no information). */
+.rank-tier--top100 { background: var(--rank-top100-bg); }
+.rank-tier--top100 td:first-child {
+  border-left: 3px solid var(--rank-top100);
+  color: var(--rank-top100);
+  font-weight: var(--weight-semibold);
+}
+.rank-tier--mid { background: var(--rank-mid-bg); }
+.rank-tier--mid td:first-child {
+  border-left: 3px solid var(--rank-mid);
+  color: var(--rank-mid);
+  font-weight: var(--weight-semibold);
+}
+.rank-tier--low { background: var(--rank-low-bg); }
+.rank-tier--low td:first-child {
+  border-left: 3px solid var(--rank-low);
+  color: var(--rank-low);
+  font-weight: var(--weight-semibold);
+}
+
+.results-block {
+  border: var(--border-hairline);
+}
+.results-block__label {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  color: var(--text-on-dark-muted);
+  padding: var(--space-8) var(--space-12) var(--space-4);
+}
+.results-block__pinned { padding-bottom: var(--space-4); }
+.results-block__divider { border-top: var(--border-hairline); }
+
+.rankings-empty {
+  color: var(--text-on-dark-muted);
+  font-size: var(--text-body);
+  text-align: center;
+  padding: var(--space-32);
+}

@@ -1,6 +1,102 @@
 {{ define "main" }}
-<section class="page">
-  <h1>PvP IV Rankings</h1>
-  <p>Coming soon.</p>
+<section class="rankings-page">
+  <div class="rankings-controls">
+    <div class="rankings-controls__row">
+      <div class="rankings-search">
+        <input type="text" id="rankings-search-input" class="input" placeholder="輸入寶可夢名稱…" autocomplete="off">
+        <ul id="rankings-search-results" class="autocomplete-list" hidden></ul>
+      </div>
+      <div class="league-tabs" id="rankings-league-tabs">
+        <button type="button" class="league-tab" data-league="great" aria-pressed="false">Great</button>
+        <button type="button" class="league-tab" data-league="ultra" aria-pressed="true">Ultra</button>
+        <button type="button" class="league-tab" data-league="master" aria-pressed="false">Master</button>
+      </div>
+      <div class="iv-inputs">
+        <label class="iv-input">
+          <span class="iv-input__label">Atk</span>
+          <select id="rankings-iv-atk" class="select">
+            {{ range seq 0 15 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+          </select>
+        </label>
+        <label class="iv-input">
+          <span class="iv-input__label">Def</span>
+          <select id="rankings-iv-def" class="select">
+            {{ range seq 0 15 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+          </select>
+        </label>
+        <label class="iv-input">
+          <span class="iv-input__label">Sta</span>
+          <select id="rankings-iv-sta" class="select">
+            {{ range seq 0 15 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <details class="advanced-settings" id="rankings-advanced">
+      <summary class="advanced-settings__toggle">進階設定</summary>
+      <div class="advanced-settings__body">
+        <label class="field">
+          <span class="field__label">IV Floor</span>
+          <select id="rankings-iv-floor" class="select">
+            <option value="0" selected>0: Wild Caught</option>
+            <option value="1">1: Trade, Good Friend</option>
+            <option value="2">2: Trade, Great Friend / Purified</option>
+            <option value="3">3: Trade, Ultra Friend</option>
+            <option value="4">4: Weather Boost</option>
+            <option value="5">5: Trade, Best Friend</option>
+            <option value="6">6: Shadow Legendary</option>
+            <option value="10">10: Raid / Hatch / Research</option>
+            <option value="12">12: Lucky Trade</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Min Level</span>
+          <select id="rankings-min-level" class="select">
+            {{ range seq 1 51 }}<option value="{{ . }}"{{ if eq . 1 }} selected{{ end }}>{{ . }}</option>{{ end }}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">Max Level</span>
+          <select id="rankings-max-level" class="select">
+            {{ range seq 1 51 }}<option value="{{ . }}"{{ if eq . 50 }} selected{{ end }}>{{ . }}</option>{{ end }}
+          </select>
+        </label>
+        <label class="field field--checkbox">
+          <input type="checkbox" id="rankings-shadow" class="checkbox">
+          <span class="field__label">Shadow 加成</span>
+        </label>
+      </div>
+    </details>
+  </div>
+
+  <div class="rankings-results" id="rankings-results">
+    <p class="rankings-empty" id="rankings-empty-state">輸入寶可夢名稱開始查詢</p>
+
+    <div class="results-block" id="rankings-results-block" hidden>
+      <div class="results-block__pinned">
+        <div class="results-block__label">你搜尋的 IV</div>
+        <table class="rankings-table">
+          <tbody id="rankings-pinned-row-container"></tbody>
+        </table>
+      </div>
+      <div class="results-block__divider"></div>
+      <div class="results-block__general">
+        <div class="results-block__label">Top 20 排行榜</div>
+        <table class="rankings-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Lvl</th><th>CP</th><th>Atk/Def/Sta</th><th>Perfect%</th><th>PvP Atk</th><th>PvP Def</th><th>PvP HP</th><th>Stat Product</th>
+            </tr>
+          </thead>
+          <tbody id="rankings-top20-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="rankings-empty" id="rankings-no-results-state" hidden>目前等級與聯盟限制下沒有符合 CP 上限的組合</p>
+  </div>
+
+  <script type="module" src="{{ "js/pages/rankings.js" | relURL }}"></script>
 </section>
 {{ end }}

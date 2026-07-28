@@ -1,3 +1,9 @@
+:root {
+  /* Measured .site-nav rendered height at desktop width, used by the sticky
+     rankings control bar (pages-rankings.css) to sit flush below the nav. */
+  --site-nav-height: 71px;
+}
+
 .site-nav {
   position: sticky;
   top: 0;
