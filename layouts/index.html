@@ -15,19 +15,19 @@
         <label class="iv-input">
           <span class="iv-input__label">Atk</span>
           <select id="rankings-iv-atk" class="select">
-            {{ range seq 0 15 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+            {{ range seq 15 -1 0 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
           </select>
         </label>
         <label class="iv-input">
           <span class="iv-input__label">Def</span>
           <select id="rankings-iv-def" class="select">
-            {{ range seq 0 15 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+            {{ range seq 15 -1 0 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
           </select>
         </label>
         <label class="iv-input">
           <span class="iv-input__label">Sta</span>
           <select id="rankings-iv-sta" class="select">
-            {{ range seq 0 15 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+            {{ range seq 15 -1 0 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
           </select>
         </label>
       </div>
@@ -51,12 +51,6 @@
           </select>
         </label>
         <label class="field">
-          <span class="field__label">Min Level</span>
-          <select id="rankings-min-level" class="select">
-            {{ range seq 1 51 }}<option value="{{ . }}"{{ if eq . 1 }} selected{{ end }}>{{ . }}</option>{{ end }}
-          </select>
-        </label>
-        <label class="field">
           <span class="field__label">Max Level</span>
           <select id="rankings-max-level" class="select">
             {{ range seq 1 51 }}<option value="{{ . }}"{{ if eq . 50 }} selected{{ end }}>{{ . }}</option>{{ end }}
@@ -74,24 +68,27 @@
     <p class="rankings-empty" id="rankings-empty-state">輸入寶可夢名稱開始查詢</p>
 
     <div class="results-block" id="rankings-results-block" hidden>
-      <div class="results-block__pinned">
-        <div class="results-block__label">你搜尋的 IV</div>
-        <table class="rankings-table">
-          <tbody id="rankings-pinned-row-container"></tbody>
-        </table>
-      </div>
-      <div class="results-block__divider"></div>
-      <div class="results-block__general">
-        <div class="results-block__label">Top 20 排行榜</div>
-        <table class="rankings-table">
-          <thead>
-            <tr>
-              <th>#</th><th>Lvl</th><th>CP</th><th>Atk/Def/Sta</th><th>Perfect%</th><th>PvP Atk</th><th>PvP Def</th><th>PvP HP</th><th>Stat Product</th>
-            </tr>
-          </thead>
-          <tbody id="rankings-top20-body"></tbody>
-        </table>
-      </div>
+      <div class="results-block__label" id="rankings-species-label"></div>
+      <table class="rankings-table">
+        <colgroup>
+          <col style="width: 6%">
+          <col style="width: 8%">
+          <col style="width: 9%">
+          <col style="width: 18%">
+          <col style="width: 16%">
+          <col style="width: 11%">
+          <col style="width: 10%">
+          <col style="width: 8%">
+          <col style="width: 14%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>#</th><th>Lvl</th><th>CP</th><th>Atk<wbr>/Def<wbr>/Sta</th><th>Perfect%</th><th>PvP Atk</th><th>PvP Def</th><th>PvP HP</th><th>Stat Product</th>
+          </tr>
+        </thead>
+        <tbody id="rankings-pinned-row-container"></tbody>
+        <tbody id="rankings-top20-body"></tbody>
+      </table>
     </div>
 
     <p class="rankings-empty" id="rankings-no-results-state" hidden>目前等級與聯盟限制下沒有符合 CP 上限的組合</p>

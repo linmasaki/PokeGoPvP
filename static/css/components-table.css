@@ -1,7 +1,11 @@
 .rankings-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: var(--text-caption);
+}
+#rankings-top20-body tr:first-child td {
+  border-top: var(--space-16) solid var(--surface-canvas);
 }
 .rankings-table thead th {
   font-size: var(--text-label);
@@ -49,12 +53,10 @@
   font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: var(--ls-label);
-  color: var(--text-on-dark-muted);
+  color: var(--rank-mid);
+  font-weight: var(--weight-semibold);
   padding: var(--space-8) var(--space-12) var(--space-4);
 }
-.results-block__pinned { padding-bottom: var(--space-4); }
-.results-block__divider { border-top: var(--border-hairline); }
-
 .rankings-empty {
   color: var(--text-on-dark-muted);
   font-size: var(--text-body);
