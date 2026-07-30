@@ -69,26 +69,20 @@
 
     <div class="results-block" id="rankings-results-block" hidden>
       <div class="results-block__label" id="rankings-species-label"></div>
-      <table class="rankings-table">
-        <colgroup>
-          <col style="width: 6%">
-          <col style="width: 8%">
-          <col style="width: 9%">
-          <col style="width: 18%">
-          <col style="width: 16%">
-          <col style="width: 11%">
-          <col style="width: 10%">
-          <col style="width: 8%">
-          <col style="width: 14%">
-        </colgroup>
-        <thead>
-          <tr>
-            <th>#</th><th>Lvl</th><th>CP</th><th>Atk<wbr>/Def<wbr>/Sta</th><th>Perfect%</th><th>PvP Atk</th><th>PvP Def</th><th>PvP HP</th><th>Stat Product</th>
-          </tr>
-        </thead>
-        <tbody id="rankings-pinned-row-container"></tbody>
-        <tbody id="rankings-top20-body"></tbody>
-      </table>
+      <div class="rankings-table-scroll" tabindex="0" aria-label="排行結果表格，可左右捲動查看更多欄位">
+        <table class="rankings-table">
+          <colgroup>
+            <col><col><col><col><col><col><col><col><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>#</th><th>Lvl</th><th>CP</th><th>IV</th><th>Perfect%</th><th>Atk</th><th>Def</th><th>HP</th><th>Stat Product</th>
+            </tr>
+          </thead>
+          <tbody id="rankings-pinned-row-container"></tbody>
+          <tbody id="rankings-top20-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <p class="rankings-empty" id="rankings-no-results-state" hidden>目前等級與聯盟限制下沒有符合 CP 上限的組合</p>

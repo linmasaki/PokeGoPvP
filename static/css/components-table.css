@@ -63,3 +63,40 @@
   text-align: center;
   padding: var(--space-32);
 }
+
+.rankings-table-scroll {
+  overflow-x: auto;
+}
+
+.rankings-table col:nth-child(1) { width: 6%; }
+.rankings-table col:nth-child(2) { width: 8%; }
+.rankings-table col:nth-child(3) { width: 9%; }
+.rankings-table col:nth-child(4) { width: 18%; }
+.rankings-table col:nth-child(5) { width: 16%; }
+.rankings-table col:nth-child(6) { width: 11%; }
+.rankings-table col:nth-child(7) { width: 10%; }
+.rankings-table col:nth-child(8) { width: 8%; }
+.rankings-table col:nth-child(9) { width: 14%; }
+
+@media (max-width: 768px) {
+  .rankings-table {
+    min-width: 460px;
+  }
+
+  .rankings-table col:nth-child(5),
+  .rankings-table th:nth-child(5),
+  .rankings-table td:nth-child(5),
+  .rankings-table col:nth-child(9),
+  .rankings-table th:nth-child(9),
+  .rankings-table td:nth-child(9) {
+    display: none;
+  }
+
+  .rankings-table col:nth-child(1) { width: 9%; }
+  .rankings-table col:nth-child(2) { width: 11%; }
+  .rankings-table col:nth-child(3) { width: 13%; }
+  .rankings-table col:nth-child(4) { width: 26%; }
+  .rankings-table col:nth-child(6) { width: 16%; }
+  .rankings-table col:nth-child(7) { width: 14%; }
+  .rankings-table col:nth-child(8) { width: 11%; }
+}
