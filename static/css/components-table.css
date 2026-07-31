@@ -12,7 +12,7 @@
   text-transform: uppercase;
   letter-spacing: var(--ls-label);
   color: var(--text-on-dark-muted);
-  text-align: left;
+  text-align: center;
   padding: var(--space-8) var(--space-12);
   border-bottom: var(--border-hairline);
 }
@@ -20,6 +20,11 @@
   padding: var(--space-8) var(--space-12);
   border-bottom: 1px solid var(--border-subtle-dark);
   color: var(--text-on-dark-primary);
+  text-align: center;
+}
+.rankings-table th:first-child,
+.rankings-table td:first-child {
+  text-align: right;
 }
 .rankings-table tbody tr:nth-child(even) { background: var(--surface-elevated); }
 .rankings-table tbody tr:last-child td { border-bottom: none; }
@@ -68,15 +73,15 @@
   overflow-x: auto;
 }
 
-.rankings-table col:nth-child(1) { width: 6%; }
-.rankings-table col:nth-child(2) { width: 8%; }
-.rankings-table col:nth-child(3) { width: 9%; }
-.rankings-table col:nth-child(4) { width: 18%; }
-.rankings-table col:nth-child(5) { width: 16%; }
-.rankings-table col:nth-child(6) { width: 11%; }
-.rankings-table col:nth-child(7) { width: 10%; }
-.rankings-table col:nth-child(8) { width: 8%; }
-.rankings-table col:nth-child(9) { width: 14%; }
+.rankings-table col:nth-child(1) { width: 7%; }
+.rankings-table col:nth-child(2) { width: 9%; }
+.rankings-table col:nth-child(3) { width: 10%; }
+.rankings-table col:nth-child(4) { width: 12%; }
+.rankings-table col:nth-child(5) { width: 14%; }
+.rankings-table col:nth-child(6) { width: 12%; }
+.rankings-table col:nth-child(7) { width: 11%; }
+.rankings-table col:nth-child(8) { width: 9%; }
+.rankings-table col:nth-child(9) { width: 16%; }
 
 @media (max-width: 768px) {
   .rankings-table {
@@ -92,11 +97,11 @@
     display: none;
   }
 
-  .rankings-table col:nth-child(1) { width: 9%; }
-  .rankings-table col:nth-child(2) { width: 11%; }
-  .rankings-table col:nth-child(3) { width: 13%; }
-  .rankings-table col:nth-child(4) { width: 26%; }
-  .rankings-table col:nth-child(6) { width: 16%; }
-  .rankings-table col:nth-child(7) { width: 14%; }
-  .rankings-table col:nth-child(8) { width: 11%; }
+  .rankings-table col:nth-child(1) { width: 10%; }
+  .rankings-table col:nth-child(2) { width: 12%; }
+  .rankings-table col:nth-child(3) { width: 15%; }
+  .rankings-table col:nth-child(4) { width: 17%; }
+  .rankings-table col:nth-child(6) { width: 18%; }
+  .rankings-table col:nth-child(7) { width: 16%; }
+  .rankings-table col:nth-child(8) { width: 12%; }
 }

@@ -18,11 +18,14 @@
   <link rel="stylesheet" href="{{ "css/components-form.css" | relURL }}">
   <link rel="stylesheet" href="{{ "css/components-table.css" | relURL }}">
   <link rel="stylesheet" href="{{ "css/pages-rankings.css" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/footer.css" | relURL }}">
 </head>
 <body>
   {{ partial "nav.html" . }}
+  <script type="module" src="{{ "js/nav.js" | relURL }}"></script>
   <main>
     {{ block "main" . }}{{ end }}
   </main>
+  {{ partial "footer.html" . }}
 </body>
 </html>

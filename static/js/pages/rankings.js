@@ -13,7 +13,7 @@ const MIN_LEVEL = 1;
 
 const state = {
   species: null,
-  league: 'ultra',
+  league: 'great',
   ivs: [{ atk: 15, def: 15, hp: 15 }],
   ivFloor: 0,
   maxLevel: 50,

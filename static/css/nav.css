@@ -91,14 +91,21 @@
     --site-nav-height: 73px;
   }
 
+  .site-nav {
+    padding-left: var(--space-16);
+    padding-right: var(--space-16);
+  }
+
   .site-nav__toggle {
     display: flex;
   }
 
+  /* Closed by default (no [hidden] attribute involved — display is driven
+     entirely by .is-visible/.is-open classes, which nav.js toggles). */
   .site-nav__links {
     display: none;
   }
-  .site-nav__links:not([hidden]) {
+  .site-nav__links.is-visible {
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -131,7 +138,7 @@
     padding: var(--space-16);
   }
 
-  .site-nav__scrim:not([hidden]) {
+  .site-nav__scrim.is-visible {
     display: block;
     position: fixed;
     top: var(--site-nav-height);
@@ -150,8 +157,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .site-nav__toggle-bar,
-  .site-nav__links,
-  .site-nav__scrim {
+  .site-nav__links.is-visible,
+  .site-nav__scrim.is-visible {
     transition-duration: 0.01ms;
   }
 }

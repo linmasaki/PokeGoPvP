@@ -3,12 +3,12 @@
   <div class="rankings-controls">
     <div class="rankings-controls__row">
       <div class="rankings-search">
-        <input type="text" id="rankings-search-input" class="input" placeholder="輸入寶可夢名稱…" autocomplete="off">
+        <input type="text" id="rankings-search-input" class="input" placeholder="輸入 Pokemon 名稱…" autocomplete="off">
         <ul id="rankings-search-results" class="autocomplete-list" hidden></ul>
       </div>
       <div class="league-tabs" id="rankings-league-tabs">
-        <button type="button" class="league-tab" data-league="great" aria-pressed="false">Great</button>
-        <button type="button" class="league-tab" data-league="ultra" aria-pressed="true">Ultra</button>
+        <button type="button" class="league-tab" data-league="great" aria-pressed="true">Great</button>
+        <button type="button" class="league-tab" data-league="ultra" aria-pressed="false">Ultra</button>
         <button type="button" class="league-tab" data-league="master" aria-pressed="false">Master</button>
       </div>
       <div class="iv-inputs">
@@ -65,11 +65,11 @@
   </div>
 
   <div class="rankings-results" id="rankings-results">
-    <p class="rankings-empty" id="rankings-empty-state">輸入寶可夢名稱開始查詢</p>
+    <p class="rankings-empty" id="rankings-empty-state">輸入 Pokemon 名稱開始查詢</p>
 
     <div class="results-block" id="rankings-results-block" hidden>
       <div class="results-block__label" id="rankings-species-label"></div>
-      <div class="rankings-table-scroll" tabindex="0" aria-label="排行結果表格，可左右捲動查看更多欄位">
+      <div class="rankings-table-scroll" role="region" tabindex="0" aria-label="排行結果表格，可左右捲動查看更多欄位">
         <table class="rankings-table">
           <colgroup>
             <col><col><col><col><col><col><col><col><col>

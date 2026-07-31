@@ -1,0 +1,5 @@
+<footer class="site-footer">
+  <a class="site-footer__link" href="{{ "" | relURL }}" aria-label="Rankings"{{ if .IsHome }} aria-current="page"{{ end }}>R</a>
+  <a class="site-footer__link" href="{{ "calculator/" | relURL }}" aria-label="Calculator"{{ if eq .Path "/calculator" }} aria-current="page"{{ end }}>C</a>
+  <a class="site-footer__link" href="{{ "search-string/" | relURL }}" aria-label="Search String"{{ if eq .Path "/search-string" }} aria-current="page"{{ end }}>S</a>
+</footer>

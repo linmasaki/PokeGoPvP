@@ -102,7 +102,7 @@
 }
 .autocomplete-list__item:hover,
 .autocomplete-list__item--active {
-  background: var(--surface-deep);
+  background: var(--shadow-gray);
 }
 .autocomplete-list__dex {
   color: var(--text-on-dark-muted);
