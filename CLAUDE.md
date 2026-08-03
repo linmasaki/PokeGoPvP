@@ -17,7 +17,7 @@
 | 路徑 | 內容 |
 |---|---|
 | `/`（首頁） | **PvP IV Rankings**——首頁即工具本體，一進站就能直接查 IV，不做額外的行銷式導覽頁 |
-| `/calculator/` | CP / 等級 / IV 反推計算機 |
+| `/calculator/` | CP／Level 雙向連動計算機 |
 | `/search-string/` | 搜尋字串產生器（League 切換、Trash String、Base Evolution/Baby Form 等設定整組沿用原站） |
 | `/about/` | 關於這個工具 + 致敬/註明改寫自 pvpivs.com（DeathByToast） |
 

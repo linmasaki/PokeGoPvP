@@ -1,0 +1,50 @@
+{{ define "main" }}
+<section class="calculator-page">
+  <div class="calculator-search">
+    <input type="text" id="calculator-search-input" class="input" placeholder="輸入 Pokemon 名稱…" autocomplete="off">
+    <ul id="calculator-search-results" class="autocomplete-list" hidden></ul>
+  </div>
+
+  <div id="calculator-fields" hidden>
+    <div class="iv-inputs">
+      <label class="iv-input">
+        <span class="iv-input__label">Atk</span>
+        <select id="calculator-iv-atk" class="select">
+          {{ range seq 15 -1 0 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+        </select>
+      </label>
+      <label class="iv-input">
+        <span class="iv-input__label">Def</span>
+        <select id="calculator-iv-def" class="select">
+          {{ range seq 15 -1 0 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+        </select>
+      </label>
+      <label class="iv-input">
+        <span class="iv-input__label">Sta</span>
+        <select id="calculator-iv-sta" class="select">
+          {{ range seq 15 -1 0 }}<option value="{{ . }}"{{ if eq . 15 }} selected{{ end }}>{{ . }}</option>{{ end }}
+        </select>
+      </label>
+    </div>
+
+    <div class="calculator-level-cp-row">
+      <label class="field">
+        <span class="field__label">Level</span>
+        <input type="number" id="calculator-level-input" class="input" min="1" max="51" step="0.5">
+      </label>
+      <label class="field">
+        <span class="field__label">CP</span>
+        <input type="number" id="calculator-cp-input" class="input" min="10" step="1">
+      </label>
+    </div>
+
+    <p class="calculator-not-found-hint" id="calculator-not-found-hint" hidden>在 1–51 級範圍內，找不到符合這組 IV 與目標 CP 的等級，請確認 IV 或 CP 是否正確</p>
+
+    <p class="calculator-hp-display">HP <span id="calculator-hp-value">—</span></p>
+  </div>
+
+  <p class="calculator-empty" id="calculator-empty-state">請先搜尋並選擇 Pokemon</p>
+
+  <script type="module" src="{{ "js/pages/calculator.js" | relURL }}"></script>
+</section>
+{{ end }}

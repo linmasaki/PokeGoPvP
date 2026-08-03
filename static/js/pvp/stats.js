@@ -26,3 +26,11 @@ export function findLevelForCpCap(baseStats, ivs, cpCap, minLevel, maxLevel) {
   }
   return null;
 }
+
+export function findExactLevelForCp(baseStats, ivs, targetCp, minLevel = 1, maxLevel = 51) {
+  for (let level = minLevel; level <= maxLevel; level += 0.5) {
+    const cpm = getCpmForLevel(level);
+    if (calculateCP(baseStats, ivs, cpm) === targetCp) return level;
+  }
+  return null;
+}
