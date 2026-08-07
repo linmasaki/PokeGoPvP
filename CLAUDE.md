@@ -18,7 +18,7 @@
 |---|---|
 | `/`（首頁） | **PvP IV Rankings**——首頁即工具本體，一進站就能直接查 IV，不做額外的行銷式導覽頁 |
 | `/calculator/` | CP／Level 雙向連動計算機 |
-| `/search-string/` | 搜尋字串產生器（League 切換、Trash String、Base Evolution/Baby Form 等設定整組沿用原站） |
+| `/search-string/` | 搜尋字串產生器（搜尋 100%/0% IV 全域開關、進化鏈清單勾選＋CP/HP 投影回搜尋物種、Trash String 反向搜尋等，部分沿用原站、部分重新設計，非整組沿用） |
 | `/about/` | 關於這個工具 + 致敬/註明改寫自 pvpivs.com（DeathByToast） |
 
 四個頁面靠**頂部固定導覽列**互相切換。

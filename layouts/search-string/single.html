@@ -1,0 +1,120 @@
+{{ define "main" }}
+<section class="search-string-page">
+  <div class="search-string-top-bar">
+    <label class="field">
+      <span class="field__label">Language</span>
+      <select id="search-string-language" class="select">
+        <option value="en" selected>English</option>
+        <option value="zh-TW">繁體中文</option>
+        <option value="ja">日本語</option>
+      </select>
+    </label>
+
+    <div class="league-tabs" id="search-string-league-tabs">
+      <button type="button" class="league-tab" data-league="great" aria-pressed="true">Great</button>
+      <button type="button" class="league-tab" data-league="ultra" aria-pressed="false">Ultra</button>
+      <button type="button" class="league-tab" data-league="master" aria-pressed="false">Master</button>
+      <button type="button" class="league-tab" data-league="all" aria-pressed="false">All Leagues</button>
+    </div>
+    <label class="field search-string-league-select">
+      <span class="field__label">League</span>
+      <select id="search-string-league-select" class="select">
+        <option value="great" selected>Great</option>
+        <option value="ultra">Ultra</option>
+        <option value="master">Master</option>
+        <option value="all">All Leagues</option>
+      </select>
+    </label>
+
+    <label class="field field--checkbox">
+      <input type="checkbox" id="search-string-find-100" class="checkbox">
+      <span class="field__label">搜尋 100% IV</span>
+    </label>
+    <label class="field field--checkbox">
+      <input type="checkbox" id="search-string-find-0" class="checkbox">
+      <span class="field__label">搜尋 0% IV</span>
+    </label>
+  </div>
+
+  <div class="search-string-search">
+    <input type="text" id="search-string-search-input" class="input" placeholder="輸入 Pokemon 名稱…" autocomplete="off">
+    <ul id="search-string-search-results" class="autocomplete-list" hidden></ul>
+  </div>
+
+  <p class="search-string-empty" id="search-string-empty-state">請先搜尋並選擇 Pokemon</p>
+
+  <div id="search-string-species-settings" hidden>
+    <ul id="search-string-evolution-checklist" class="evolution-checklist"></ul>
+
+    <div class="search-string-settings-row">
+      <label class="field">
+        <span class="field__label">Top N</span>
+        <input type="number" id="search-string-top-n" class="input" min="1" max="4096" step="1" value="10">
+      </label>
+      <label class="field">
+        <span class="field__label">Max Level</span>
+        <select id="search-string-max-level" class="select">
+          {{ range seq 1 51 }}<option value="{{ . }}"{{ if eq . 50 }} selected{{ end }}>{{ . }}</option>{{ end }}
+        </select>
+      </label>
+    </div>
+
+    <label class="field field--checkbox">
+      <input type="checkbox" id="search-string-trash" class="checkbox">
+      <span class="field__label">Trash String</span>
+    </label>
+
+    <div id="search-string-trash-details" hidden>
+      <label class="field field--checkbox">
+        <input type="checkbox" id="search-string-exclude-perfect" class="checkbox" checked>
+        <span class="field__label">保留 100% IV</span>
+      </label>
+      <label class="field field--checkbox">
+        <input type="checkbox" id="search-string-exclude-zero" class="checkbox" checked>
+        <span class="field__label">保留 0% IV</span>
+      </label>
+
+      <details class="advanced-settings" id="search-string-advanced">
+        <summary class="advanced-settings__toggle">進階 Trash 篩選</summary>
+        <div class="advanced-settings__body">
+          <label class="field field--checkbox">
+            <input type="checkbox" id="search-string-exclude-xxl" class="checkbox">
+            <span class="field__label">排除 XXL</span>
+          </label>
+          <label class="field field--checkbox">
+            <input type="checkbox" id="search-string-exclude-xxs" class="checkbox">
+            <span class="field__label">排除 XXS</span>
+          </label>
+          <label class="field field--checkbox">
+            <input type="checkbox" id="search-string-exclude-xl" class="checkbox">
+            <span class="field__label">排除 XL</span>
+          </label>
+          <label class="field field--checkbox">
+            <input type="checkbox" id="search-string-exclude-xs" class="checkbox">
+            <span class="field__label">排除 XS</span>
+          </label>
+          <label class="field field--checkbox">
+            <input type="checkbox" id="search-string-exclude-tagged" class="checkbox">
+            <span class="field__label">排除已標記</span>
+          </label>
+          <label class="field field--checkbox">
+            <input type="checkbox" id="search-string-exclude-favorited" class="checkbox">
+            <span class="field__label">排除已加最愛</span>
+          </label>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="search-string-output">
+    <textarea id="search-string-output" class="input search-string-output__text" readonly rows="4"></textarea>
+    <div class="search-string-output__actions">
+      <button type="button" class="btn" id="search-string-copy-btn">複製</button>
+      <button type="button" class="btn" id="search-string-share-btn">分享連結</button>
+      <span class="search-string-output__feedback" id="search-string-copy-feedback" hidden>已複製</span>
+    </div>
+  </div>
+
+  <script type="module" src="{{ "js/pages/search-string.js" | relURL }}"></script>
+</section>
+{{ end }}
