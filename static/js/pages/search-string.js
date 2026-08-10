@@ -5,6 +5,8 @@ import {
   generateGeneralModeString,
   generateTrashModeString,
   generateGlobalIvExtremeString,
+  serializeStateToQuery,
+  parseQueryToState,
 } from './search-string-logic.js';
 
 const POKEMON_DATA_URL = new URL('../data/pokemon.json', import.meta.url);
@@ -32,6 +34,9 @@ const excludeXSCheckbox = document.getElementById('search-string-exclude-xs');
 const excludeTaggedCheckbox = document.getElementById('search-string-exclude-tagged');
 const excludeFavoritedCheckbox = document.getElementById('search-string-exclude-favorited');
 const outputTextarea = document.getElementById('search-string-output');
+const copyBtn = document.getElementById('search-string-copy-btn');
+const shareBtn = document.getElementById('search-string-share-btn');
+const copyFeedback = document.getElementById('search-string-copy-feedback');
 
 const rankingCache = createRankingCache();
 
@@ -333,4 +338,71 @@ document.addEventListener('click', (event) => {
   }
 });
 
-loadPokemonData();
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    copyFeedback.textContent = '已複製';
+  } catch {
+    copyFeedback.textContent = '無法複製，請手動複製';
+  }
+  copyFeedback.hidden = false;
+  setTimeout(() => { copyFeedback.hidden = true; }, 1500);
+}
+
+copyBtn.addEventListener('click', () => {
+  if (!outputTextarea.value) return;
+  copyToClipboard(outputTextarea.value);
+});
+
+shareBtn.addEventListener('click', () => {
+  const query = serializeStateToQuery(state);
+  const url = query ? `${window.location.origin}${window.location.pathname}?${query}` : `${window.location.origin}${window.location.pathname}`;
+  copyToClipboard(url);
+});
+
+function applyStateFromUrl() {
+  const parsed = parseQueryToState(window.location.search.slice(1), pokemonList);
+  Object.assign(state, parsed);
+
+  languageSelect.value = state.language;
+  setLeague(state.league);
+  find100Checkbox.checked = state.find100IV;
+  find0Checkbox.checked = state.find0IV;
+  topNInput.value = state.topN;
+  maxLevelSelect.value = state.maxLevel;
+  trashCheckbox.checked = state.trash;
+  trashDetails.hidden = !state.trash;
+  excludePerfectCheckbox.checked = state.trashExcludePerfect;
+  excludeZeroCheckbox.checked = state.trashExcludeZero;
+  excludeXXLCheckbox.checked = state.trashExcludeXXL;
+  excludeXXSCheckbox.checked = state.trashExcludeXXS;
+  excludeXLCheckbox.checked = state.trashExcludeXL;
+  excludeXSCheckbox.checked = state.trashExcludeXS;
+  excludeTaggedCheckbox.checked = state.trashExcludeTagged;
+  excludeFavoritedCheckbox.checked = state.trashExcludeFavorited;
+
+  if (state.species) {
+    const pokemon = pokemonList.find((p) => p.speciesId === state.species);
+    if (pokemon) {
+      searchInput.value = pokemon.speciesName;
+      // renderEvolutionChecklist always resets state.includedFamilyMembers to "everything checked" —
+      // if the URL carried an explicit evo= selection, re-apply it (both the state Set and the
+      // checkbox DOM) afterwards so a shared link with some family members unchecked round-trips.
+      renderEvolutionChecklist(state.species);
+
+      if (parsed.includedFamilyMembers) {
+        const includedSet = new Set(parsed.includedFamilyMembers);
+        state.includedFamilyMembers = includedSet;
+        for (const checkbox of evolutionChecklist.querySelectorAll('input[type="checkbox"]')) {
+          const memberId = checkbox.id.replace('search-string-evo-', '');
+          checkbox.checked = includedSet.has(memberId);
+        }
+      }
+    }
+  }
+
+  applyFindExtremeVisibility();
+  onOutputInputsChanged();
+}
+
+loadPokemonData().then(applyStateFromUrl);

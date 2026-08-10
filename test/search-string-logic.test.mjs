@@ -27,6 +27,8 @@ import {
   generateGeneralModeString,
   generateTrashModeString,
   generateGlobalIvExtremeString,
+  serializeStateToQuery,
+  parseQueryToState,
 } from '../static/js/pages/search-string-logic.js';
 
 const pokemonList = JSON.parse(fs.readFileSync(new URL('../static/js/data/pokemon.json', import.meta.url)));
@@ -423,4 +425,135 @@ test('generateTrashModeString produces output that respects trashExcludePerfect 
     cache
   );
   assert.ok(!result.includes('4atk*&4def*&4sta*'), 'the fully-protected 4-star tier must not appear as a standalone AND clause');
+});
+
+const DEFAULT_STATE_FOR_TEST = {
+  species: null,
+  league: 'great',
+  language: 'en',
+  find100IV: false,
+  find0IV: false,
+  includedFamilyMembers: new Set(),
+  topN: 10,
+  maxLevel: 50,
+  trash: false,
+  trashExcludePerfect: true,
+  trashExcludeZero: true,
+};
+
+test('serializeStateToQuery omits every field that is still at its default value', () => {
+  assert.equal(serializeStateToQuery(DEFAULT_STATE_FOR_TEST), '');
+});
+
+test('serializeStateToQuery includes only the fields that differ from default', () => {
+  const query = serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', league: 'ultra', topN: 20 });
+  const params = new URLSearchParams(query);
+  assert.equal(params.get('mon'), 'eevee');
+  assert.equal(params.get('league'), 'ultra');
+  assert.equal(params.get('topN'), '20');
+  assert.equal(params.has('lang'), false);
+});
+
+test('parseQueryToState reads back only the fields present in the query string', () => {
+  const parsed = parseQueryToState('mon=eevee&league=ultra&topN=20', pokemonList);
+  assert.deepEqual(parsed, { species: 'eevee', league: 'ultra', topN: 20 });
+});
+
+test('parseQueryToState round-trips through serializeStateToQuery', () => {
+  const original = { ...DEFAULT_STATE_FOR_TEST, species: 'charmander', find100IV: true, trash: true, trashExcludePerfect: false };
+  const query = serializeStateToQuery(original);
+  const parsed = parseQueryToState(query, pokemonList);
+  assert.equal(parsed.species, 'charmander');
+  assert.equal(parsed.find100IV, true);
+  assert.equal(parsed.trash, true);
+  assert.equal(parsed.trashExcludePerfect, false);
+});
+
+test('serializeStateToQuery includes the evolution checklist selection whenever a species is selected', () => {
+  const query = serializeStateToQuery({
+    ...DEFAULT_STATE_FOR_TEST,
+    species: 'eevee',
+    includedFamilyMembers: new Set(['eevee', 'vaporeon']),
+  });
+  const params = new URLSearchParams(query);
+  assert.equal(params.get('evo'), 'eevee,vaporeon');
+});
+
+test('serializeStateToQuery omits the evo param when no species is selected', () => {
+  const query = serializeStateToQuery(DEFAULT_STATE_FOR_TEST);
+  assert.equal(new URLSearchParams(query).has('evo'), false);
+});
+
+test('serializeStateToQuery still writes an (empty) evo param when every family member is unchecked', () => {
+  // Regression test: omitting evo here is indistinguishable from "no evo param was ever set",
+  // so a restored link would fall back to "everything checked" instead of "nothing checked".
+  const query = serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', includedFamilyMembers: new Set() });
+  const params = new URLSearchParams(query);
+  assert.equal(params.has('evo'), true);
+  assert.equal(params.get('evo'), '');
+});
+
+test('parseQueryToState parses the evo param into an array of speciesIds', () => {
+  const parsed = parseQueryToState('mon=eevee&evo=eevee,vaporeon', pokemonList);
+  assert.deepEqual(parsed.includedFamilyMembers, ['eevee', 'vaporeon']);
+});
+
+test('parseQueryToState round-trips an all-unchecked evolution list back to an empty (not full) selection', () => {
+  const parsed = parseQueryToState('mon=eevee&evo=', pokemonList);
+  assert.deepEqual(parsed.includedFamilyMembers, []);
+});
+
+test('parseQueryToState drops evo ids that are not part of the given species\' own evolution family', () => {
+  // "mewtwo" is a real, existing species, but not part of Eevee's family — it must not be
+  // silently trusted just because it exists somewhere in pokemonList.
+  const parsed = parseQueryToState('mon=eevee&evo=mewtwo', pokemonList);
+  assert.deepEqual(parsed.includedFamilyMembers, []);
+});
+
+test('parseQueryToState keeps only the evo ids that are genuinely part of the species\' family', () => {
+  const parsed = parseQueryToState('mon=eevee&evo=eevee,vaporeon,mewtwo', pokemonList);
+  assert.deepEqual(parsed.includedFamilyMembers, ['eevee', 'vaporeon']);
+});
+
+test('parseQueryToState rejects a species id that does not exist in pokemonList', () => {
+  const parsed = parseQueryToState('mon=not-a-real-species', pokemonList);
+  assert.equal(parsed.species, undefined);
+});
+
+test('parseQueryToState rejects a league value outside the known set', () => {
+  const parsed = parseQueryToState('league=bogus', pokemonList);
+  assert.equal(parsed.league, undefined);
+});
+
+test('parseQueryToState accepts every known league value', () => {
+  for (const league of ['great', 'ultra', 'master', 'all']) {
+    assert.equal(parseQueryToState(`league=${league}`, pokemonList).league, league);
+  }
+});
+
+test('parseQueryToState rejects a language value outside the known set', () => {
+  const parsed = parseQueryToState('lang=klingon', pokemonList);
+  assert.equal(parsed.language, undefined);
+});
+
+test('parseQueryToState rejects a non-integer or out-of-range topN', () => {
+  assert.equal(parseQueryToState('topN=not-a-number', pokemonList).topN, undefined);
+  assert.equal(parseQueryToState('topN=0', pokemonList).topN, undefined);
+  assert.equal(parseQueryToState('topN=4097', pokemonList).topN, undefined);
+  assert.equal(parseQueryToState('topN=12.5', pokemonList).topN, undefined);
+  assert.equal(parseQueryToState('topN=4096', pokemonList).topN, 4096);
+});
+
+test('parseQueryToState rejects a maxLevel outside the engine\'s supported 1-51 range', () => {
+  // This is the case that previously crashed the page outright: getCpmForLevel(999) throws
+  // a RangeError as soon as ranking starts, since the engine only supports levels 1-55 and
+  // this page only ever exposes 1-51 as a selectable option.
+  assert.equal(parseQueryToState('maxLevel=999', pokemonList).maxLevel, undefined);
+  assert.equal(parseQueryToState('maxLevel=0', pokemonList).maxLevel, undefined);
+  assert.equal(parseQueryToState('maxLevel=51', pokemonList).maxLevel, 51);
+});
+
+test('parseQueryToState rejects a boolean field value that is neither "true" nor "false"', () => {
+  const parsed = parseQueryToState('xp=anything', pokemonList);
+  assert.equal(parsed.trashExcludePerfect, undefined);
 });

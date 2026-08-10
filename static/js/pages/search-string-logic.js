@@ -326,3 +326,122 @@ export function generateGlobalIvExtremeString(find100IV, find0IV, language) {
   if (find0IV) parts.push(`0${vocab.atk}*&0${vocab.def}*&0${vocab.sta}*`);
   return parts.join(',');
 }
+
+const URL_PARAM_DEFAULTS = {
+  species: null,
+  league: 'great',
+  language: 'en',
+  find100IV: false,
+  find0IV: false,
+  topN: 10,
+  maxLevel: 50,
+  trash: false,
+  trashExcludePerfect: true,
+  trashExcludeZero: true,
+  trashExcludeXXL: false,
+  trashExcludeXXS: false,
+  trashExcludeXL: false,
+  trashExcludeXS: false,
+  trashExcludeTagged: false,
+  trashExcludeFavorited: false,
+};
+
+const URL_PARAM_KEYS = {
+  species: 'mon',
+  league: 'league',
+  language: 'lang',
+  find100IV: 'f100',
+  find0IV: 'f0',
+  topN: 'topN',
+  maxLevel: 'maxLevel',
+  trash: 'trash',
+  trashExcludePerfect: 'xp',
+  trashExcludeZero: 'xz',
+  trashExcludeXXL: 'xxl',
+  trashExcludeXXS: 'xxs',
+  trashExcludeXL: 'xl',
+  trashExcludeXS: 'xs',
+  trashExcludeTagged: 'xt',
+  trashExcludeFavorited: 'xf',
+};
+
+export function serializeStateToQuery(state) {
+  const params = new URLSearchParams();
+  for (const [field, paramKey] of Object.entries(URL_PARAM_KEYS)) {
+    const value = state[field];
+    if (value === URL_PARAM_DEFAULTS[field]) continue;
+    if (value === null || value === undefined) continue;
+    params.set(paramKey, String(value));
+  }
+
+  // includedFamilyMembers is a Set keyed off the selected species, so it can't be compared
+  // against a fixed default the way the other fields are — always include it once a species
+  // is selected, so a shared link never silently drops which family members were unchecked.
+  // This must fire even when the set is EMPTY (every family member unchecked): omitting the
+  // param entirely in that case is indistinguishable from "no evo param was ever set", so a
+  // restored link would fall back to evolutionChecklist's default (everything checked) instead
+  // of correctly restoring to nothing checked.
+  if (state.species && state.includedFamilyMembers) {
+    params.set('evo', [...state.includedFamilyMembers].join(','));
+  }
+
+  return params.toString();
+}
+
+const VALID_LEAGUES = new Set(['great', 'ultra', 'master', 'all']);
+const VALID_LANGUAGES = new Set(Object.keys(LANGUAGE_VOCAB));
+const TOP_N_MIN = 1;
+const TOP_N_MAX = 4096;
+const MAX_LEVEL_MIN = 1;
+const MAX_LEVEL_MAX = 51;
+
+// A URL is untrusted external input (stale links, hand-edited query strings, corrupted
+// copies) — unlike the page's own <select>/<input> controls, nothing here is constrained
+// by native HTML validation, so every field is validated explicitly. An invalid value is
+// simply omitted from the result (falls back to state's existing/default value) rather than
+// applied as-is; a caller must never blindly `Object.assign(state, parsed)` without this
+// validation already having run.
+export function parseQueryToState(queryString, pokemonList) {
+  const params = new URLSearchParams(queryString);
+  const result = {};
+
+  const BOOLEAN_FIELDS = new Set([
+    'find100IV', 'find0IV', 'trash', 'trashExcludePerfect', 'trashExcludeZero',
+    'trashExcludeXXL', 'trashExcludeXXS', 'trashExcludeXL', 'trashExcludeXS',
+    'trashExcludeTagged', 'trashExcludeFavorited',
+  ]);
+
+  for (const [field, paramKey] of Object.entries(URL_PARAM_KEYS)) {
+    if (!params.has(paramKey)) continue;
+    const raw = params.get(paramKey);
+
+    if (field === 'species') {
+      if (pokemonList.some((p) => p.speciesId === raw)) result.species = raw;
+    } else if (field === 'league') {
+      if (VALID_LEAGUES.has(raw)) result.league = raw;
+    } else if (field === 'language') {
+      if (VALID_LANGUAGES.has(raw)) result.language = raw;
+    } else if (field === 'topN') {
+      const num = Number(raw);
+      if (Number.isInteger(num) && num >= TOP_N_MIN && num <= TOP_N_MAX) result.topN = num;
+    } else if (field === 'maxLevel') {
+      const num = Number(raw);
+      if (Number.isInteger(num) && num >= MAX_LEVEL_MIN && num <= MAX_LEVEL_MAX) result.maxLevel = num;
+    } else if (BOOLEAN_FIELDS.has(field)) {
+      if (raw === 'true' || raw === 'false') result[field] = raw === 'true';
+    }
+  }
+
+  if (params.has('evo')) {
+    const raw = params.get('evo');
+    const candidateIds = raw === '' ? [] : raw.split(',');
+    // Only keep ids that are actually part of the (already-validated) species' own evolution
+    // family — an evo param naming an unrelated real species (e.g. a stale/hand-edited link)
+    // must not silently end up included in the ranking computation.
+    result.includedFamilyMembers = result.species
+      ? candidateIds.filter((id) => buildEvolutionChecklist(result.species, pokemonList).includes(id))
+      : [];
+  }
+
+  return result;
+}
