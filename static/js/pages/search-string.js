@@ -22,7 +22,6 @@ const leagueSelect = document.getElementById('search-string-league-select');
 const find100Checkbox = document.getElementById('search-string-find-100');
 const find0Checkbox = document.getElementById('search-string-find-0');
 const topNInput = document.getElementById('search-string-top-n');
-const maxLevelSelect = document.getElementById('search-string-max-level');
 const trashCheckbox = document.getElementById('search-string-trash');
 const trashDetails = document.getElementById('search-string-trash-details');
 const excludePerfectCheckbox = document.getElementById('search-string-exclude-perfect');
@@ -38,6 +37,18 @@ const copyBtn = document.getElementById('search-string-copy-btn');
 const shareBtn = document.getElementById('search-string-share-btn');
 const copyFeedback = document.getElementById('search-string-copy-feedback');
 
+// One table drives both the change listeners and the URL-restore sync for every trash toggle.
+const TRASH_TOGGLE_BINDINGS = [
+  [excludePerfectCheckbox, 'trashExcludePerfect'],
+  [excludeZeroCheckbox, 'trashExcludeZero'],
+  [excludeXXLCheckbox, 'trashExcludeXXL'],
+  [excludeXXSCheckbox, 'trashExcludeXXS'],
+  [excludeXLCheckbox, 'trashExcludeXL'],
+  [excludeXSCheckbox, 'trashExcludeXS'],
+  [excludeTaggedCheckbox, 'trashExcludeTagged'],
+  [excludeFavoritedCheckbox, 'trashExcludeFavorited'],
+];
+
 const rankingCache = createRankingCache();
 
 let pokemonList = [];
@@ -51,7 +62,6 @@ const state = {
   find0IV: false,
   includedFamilyMembers: new Set(),
   topN: 10,
-  maxLevel: 50,
   trash: false,
   trashExcludePerfect: true,
   trashExcludeZero: true,
@@ -95,9 +105,15 @@ function renderSuggestions(matches) {
   searchResultsList.hidden = false;
 }
 
-function renderEvolutionChecklist(speciesId) {
+function renderEvolutionChecklist(speciesId, presetSelection) {
   const memberIds = buildEvolutionChecklist(speciesId, pokemonList);
-  state.includedFamilyMembers = new Set(memberIds);
+  // The searched species is normally caught wild and evaluated by what it evolves into, not by
+  // its own PvP rank — so the search target itself starts unchecked whenever there's an actual
+  // evolution/Mega to fall back on. A species with no family beyond itself has nothing else to
+  // check, so it stays included. An explicit preset (e.g. the evo= selection restored from a
+  // shared URL) wins over the default.
+  const defaultIncluded = memberIds.length > 1 ? memberIds.filter((id) => id !== speciesId) : memberIds;
+  state.includedFamilyMembers = presetSelection ?? new Set(defaultIncluded);
 
   evolutionChecklist.innerHTML = '';
   for (const memberId of memberIds) {
@@ -110,7 +126,7 @@ function renderEvolutionChecklist(speciesId) {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.className = 'checkbox';
-    checkbox.checked = true;
+    checkbox.checked = state.includedFamilyMembers.has(memberId);
     checkbox.id = `search-string-evo-${memberId}`;
     checkbox.addEventListener('change', () => {
       if (checkbox.checked) {
@@ -190,7 +206,6 @@ function onOutputInputsChanged() {
     checkedItems,
     leagues: leaguesToConsider(),
     topN: state.topN,
-    maxLevel: state.maxLevel,
     language: state.language,
   };
 
@@ -216,12 +231,16 @@ function onOutputInputsChanged() {
   }
 }
 
-function setLeague(league) {
-  state.league = league;
+function syncLeagueControls(league) {
   for (const tab of leagueTabsContainer.querySelectorAll('.league-tab')) {
     tab.setAttribute('aria-pressed', String(tab.dataset.league === league));
   }
   leagueSelect.value = league;
+}
+
+function setLeague(league) {
+  state.league = league;
+  syncLeagueControls(league);
   onOutputInputsChanged();
 }
 
@@ -263,49 +282,18 @@ topNInput.addEventListener('input', () => {
   onOutputInputsChanged();
 });
 
-maxLevelSelect.addEventListener('change', () => {
-  state.maxLevel = Number(maxLevelSelect.value);
-  onOutputInputsChanged();
-});
-
 trashCheckbox.addEventListener('change', () => {
   state.trash = trashCheckbox.checked;
   trashDetails.hidden = !state.trash;
   onOutputInputsChanged();
 });
 
-excludePerfectCheckbox.addEventListener('change', () => {
-  state.trashExcludePerfect = excludePerfectCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeZeroCheckbox.addEventListener('change', () => {
-  state.trashExcludeZero = excludeZeroCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeXXLCheckbox.addEventListener('change', () => {
-  state.trashExcludeXXL = excludeXXLCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeXXSCheckbox.addEventListener('change', () => {
-  state.trashExcludeXXS = excludeXXSCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeXLCheckbox.addEventListener('change', () => {
-  state.trashExcludeXL = excludeXLCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeXSCheckbox.addEventListener('change', () => {
-  state.trashExcludeXS = excludeXSCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeTaggedCheckbox.addEventListener('change', () => {
-  state.trashExcludeTagged = excludeTaggedCheckbox.checked;
-  onOutputInputsChanged();
-});
-excludeFavoritedCheckbox.addEventListener('change', () => {
-  state.trashExcludeFavorited = excludeFavoritedCheckbox.checked;
-  onOutputInputsChanged();
-});
+for (const [checkbox, field] of TRASH_TOGGLE_BINDINGS) {
+  checkbox.addEventListener('change', () => {
+    state[field] = checkbox.checked;
+    onOutputInputsChanged();
+  });
+}
 
 searchInput.addEventListener('input', () => {
   const matches = searchPokemon(searchInput.value, pokemonList);
@@ -361,44 +349,26 @@ shareBtn.addEventListener('click', () => {
 });
 
 function applyStateFromUrl() {
-  const parsed = parseQueryToState(window.location.search.slice(1), pokemonList);
+  // includedFamilyMembers arrives as an Array (and only alongside a valid species) — it is
+  // handed to renderEvolutionChecklist as a Set instead of being Object.assign'd, so the
+  // Set-typed state field is never overwritten with an Array.
+  const { includedFamilyMembers: parsedEvo, ...parsed } = parseQueryToState(window.location.search.slice(1), pokemonList);
   Object.assign(state, parsed);
 
   languageSelect.value = state.language;
-  setLeague(state.league);
+  syncLeagueControls(state.league);
   find100Checkbox.checked = state.find100IV;
   find0Checkbox.checked = state.find0IV;
   topNInput.value = state.topN;
-  maxLevelSelect.value = state.maxLevel;
   trashCheckbox.checked = state.trash;
   trashDetails.hidden = !state.trash;
-  excludePerfectCheckbox.checked = state.trashExcludePerfect;
-  excludeZeroCheckbox.checked = state.trashExcludeZero;
-  excludeXXLCheckbox.checked = state.trashExcludeXXL;
-  excludeXXSCheckbox.checked = state.trashExcludeXXS;
-  excludeXLCheckbox.checked = state.trashExcludeXL;
-  excludeXSCheckbox.checked = state.trashExcludeXS;
-  excludeTaggedCheckbox.checked = state.trashExcludeTagged;
-  excludeFavoritedCheckbox.checked = state.trashExcludeFavorited;
+  for (const [checkbox, field] of TRASH_TOGGLE_BINDINGS) checkbox.checked = state[field];
 
   if (state.species) {
-    const pokemon = pokemonList.find((p) => p.speciesId === state.species);
-    if (pokemon) {
-      searchInput.value = pokemon.speciesName;
-      // renderEvolutionChecklist always resets state.includedFamilyMembers to "everything checked" —
-      // if the URL carried an explicit evo= selection, re-apply it (both the state Set and the
-      // checkbox DOM) afterwards so a shared link with some family members unchecked round-trips.
-      renderEvolutionChecklist(state.species);
-
-      if (parsed.includedFamilyMembers) {
-        const includedSet = new Set(parsed.includedFamilyMembers);
-        state.includedFamilyMembers = includedSet;
-        for (const checkbox of evolutionChecklist.querySelectorAll('input[type="checkbox"]')) {
-          const memberId = checkbox.id.replace('search-string-evo-', '');
-          checkbox.checked = includedSet.has(memberId);
-        }
-      }
-    }
+    // parseQueryToState only accepts species ids that exist in pokemonList, so this lookup
+    // always succeeds.
+    searchInput.value = pokemonList.find((p) => p.speciesId === state.species).speciesName;
+    renderEvolutionChecklist(state.species, parsedEvo && new Set(parsedEvo));
   }
 
   applyFindExtremeVisibility();

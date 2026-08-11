@@ -51,12 +51,6 @@
         <span class="field__label">Top N</span>
         <input type="number" id="search-string-top-n" class="input" min="1" max="4096" step="1" value="10">
       </label>
-      <label class="field">
-        <span class="field__label">Max Level</span>
-        <select id="search-string-max-level" class="select">
-          {{ range seq 1 51 }}<option value="{{ . }}"{{ if eq . 50 }} selected{{ end }}>{{ . }}</option>{{ end }}
-        </select>
-      </label>
     </div>
 
     <label class="field field--checkbox">
@@ -74,7 +68,7 @@
         <span class="field__label">保留 0% IV</span>
       </label>
 
-      <details class="advanced-settings" id="search-string-advanced">
+      <details class="advanced-settings">
         <summary class="advanced-settings__toggle">進階 Trash 篩選</summary>
         <div class="advanced-settings__body">
           <label class="field field--checkbox">
