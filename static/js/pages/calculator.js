@@ -1,9 +1,7 @@
-import { searchPokemon } from './rankings-logic.js';
 import { getCpmForLevel } from '../pvp/cpm.js';
 import { calculateCP, calculateBattleStats, findExactLevelForCp } from '../pvp/stats.js';
 import { sanitizeLevel } from './calculator-logic.js';
-
-const POKEMON_DATA_URL = new URL('../data/pokemon.json', import.meta.url);
+import { loadPokemonList, createAutocomplete } from './pokemon-search.js';
 
 const searchInput = document.getElementById('calculator-search-input');
 const searchResultsList = document.getElementById('calculator-search-results');
@@ -18,7 +16,6 @@ const ivDefSelect = document.getElementById('calculator-iv-def');
 const ivStaSelect = document.getElementById('calculator-iv-sta');
 
 let pokemonList = [];
-let activeSuggestionIndex = -1;
 
 const state = {
   species: null,
@@ -27,24 +24,20 @@ const state = {
   cp: null,
 };
 
-async function loadPokemonData() {
-  const response = await fetch(POKEMON_DATA_URL);
-  pokemonList = await response.json();
-}
-
 function getPokemon() {
   return pokemonList.find((p) => p.speciesId === state.species) ?? null;
 }
 
-function updateHpDisplay() {
-  const pokemon = getPokemon();
+// Both recompute paths have already resolved the species by the time they refresh HP, so they
+// hand it in rather than making this repeat the lookup (a linear scan over ~1100 entries).
+function updateHpDisplay(pokemon = getPokemon()) {
   if (!pokemon || state.level === null) {
     hpValue.textContent = '—';
     return;
   }
   const cpm = getCpmForLevel(state.level);
   const battle = calculateBattleStats(pokemon.baseStats, state.ivs, cpm);
-  hpValue.textContent = String(Math.round(battle.hp));
+  hpValue.textContent = String(battle.hp);
 }
 
 function recomputeCpFromLevel() {
@@ -55,7 +48,7 @@ function recomputeCpFromLevel() {
   state.cp = cp;
   cpInput.value = cp;
   notFoundHint.hidden = true;
-  updateHpDisplay();
+  updateHpDisplay(pokemon);
 }
 
 function recomputeLevelFromCp() {
@@ -71,93 +64,28 @@ function recomputeLevelFromCp() {
     levelInput.value = level;
     notFoundHint.hidden = true;
   }
-  updateHpDisplay();
+  updateHpDisplay(pokemon);
 }
 
-function renderSuggestions(matches) {
-  searchResultsList.innerHTML = '';
-  activeSuggestionIndex = -1;
+createAutocomplete({
+  input: searchInput,
+  list: searchResultsList,
+  containerSelector: '.calculator-search',
+  getPokemonList: () => pokemonList,
+  onSelect: (pokemon) => {
+    state.species = pokemon.speciesId;
 
-  if (matches.length === 0) {
-    searchResultsList.hidden = true;
-    return;
-  }
+    emptyState.hidden = true;
+    fieldsArea.hidden = false;
 
-  for (const pokemon of matches) {
-    const item = document.createElement('li');
-    item.className = 'autocomplete-list__item';
-    item.dataset.speciesId = pokemon.speciesId;
-
-    const dexSpan = document.createElement('span');
-    dexSpan.className = 'autocomplete-list__dex';
-    dexSpan.textContent = `#${String(pokemon.dex).padStart(3, '0')}`;
-    item.appendChild(dexSpan);
-
-    item.appendChild(document.createTextNode(pokemon.speciesName));
-
-    item.addEventListener('click', () => selectSpecies(pokemon.speciesId));
-    searchResultsList.appendChild(item);
-  }
-
-  searchResultsList.hidden = false;
-}
-
-function selectSpecies(speciesId) {
-  const pokemon = pokemonList.find((p) => p.speciesId === speciesId);
-  if (!pokemon) return;
-
-  state.species = speciesId;
-  searchInput.value = pokemon.speciesName;
-  searchResultsList.hidden = true;
-  searchResultsList.innerHTML = '';
-
-  emptyState.hidden = true;
-  fieldsArea.hidden = false;
-
-  // 規則 1：不分第一次選定或切換到另一隻，Level/CP/HP 一律清空，不設預設值，IV 維持目前的選擇不變
-  state.level = null;
-  state.cp = null;
-  levelInput.value = '';
-  cpInput.value = '';
-  hpValue.textContent = '—';
-  notFoundHint.hidden = true;
-}
-
-function updateActiveSuggestion(items) {
-  items.forEach((item, index) => {
-    item.classList.toggle('autocomplete-list__item--active', index === activeSuggestionIndex);
-  });
-}
-
-searchInput.addEventListener('input', () => {
-  const matches = searchPokemon(searchInput.value, pokemonList);
-  renderSuggestions(matches);
-});
-
-searchInput.addEventListener('keydown', (event) => {
-  const items = Array.from(searchResultsList.querySelectorAll('.autocomplete-list__item'));
-  if (items.length === 0) return;
-
-  if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    activeSuggestionIndex = Math.min(activeSuggestionIndex + 1, items.length - 1);
-    updateActiveSuggestion(items);
-  } else if (event.key === 'ArrowUp') {
-    event.preventDefault();
-    activeSuggestionIndex = Math.max(activeSuggestionIndex - 1, 0);
-    updateActiveSuggestion(items);
-  } else if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
-    event.preventDefault();
-    selectSpecies(items[activeSuggestionIndex].dataset.speciesId);
-  } else if (event.key === 'Escape') {
-    searchResultsList.hidden = true;
-  }
-});
-
-document.addEventListener('click', (event) => {
-  if (!event.target.closest('.calculator-search')) {
-    searchResultsList.hidden = true;
-  }
+    // 規則 1：不分第一次選定或切換到另一隻，Level/CP/HP 一律清空，不設預設值，IV 維持目前的選擇不變
+    state.level = null;
+    state.cp = null;
+    levelInput.value = '';
+    cpInput.value = '';
+    hpValue.textContent = '—';
+    notFoundHint.hidden = true;
+  },
 });
 
 cpInput.addEventListener('input', () => {
@@ -205,4 +133,9 @@ ivAtkSelect.addEventListener('change', onIvChange);
 ivDefSelect.addEventListener('change', onIvChange);
 ivStaSelect.addEventListener('change', onIvChange);
 
-loadPokemonData();
+loadPokemonList()
+  .then((list) => { pokemonList = list; })
+  .catch((error) => {
+    console.error(error);
+    emptyState.textContent = 'Pokemon 資料載入失敗，請重新整理頁面';
+  });

@@ -1,5 +1,5 @@
 import { rankIVCombinations } from '../pvp/ranker.js';
-import { getCpCapForLeague } from './rankings-logic.js';
+import { getCpCapForLeague } from '../pvp/leagues.js';
 import { getCpmForLevel } from '../pvp/cpm.js';
 import { calculateCP, calculateBattleStats } from '../pvp/stats.js';
 
@@ -139,7 +139,7 @@ export function computeProjectedCpHpSets(tierMembers, baseStats, levelCap = PROJ
     for (let level = 1; level <= cappedMaxLevel; level += 0.5) {
       const cpm = getCpmForLevel(level);
       cpSet.add(calculateCP(baseStats, ivs, cpm));
-      hpSet.add(Math.round(calculateBattleStats(baseStats, ivs, cpm).hp));
+      hpSet.add(calculateBattleStats(baseStats, ivs, cpm).hp);
     }
   }
   return { cpSet, hpSet };

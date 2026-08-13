@@ -26,3 +26,12 @@ test('sanitizeLevel leaves an already-valid 0.5-step value unchanged', () => {
 test('sanitizeLevel rounds a near-upper-boundary value and then clamps it', () => {
   assert.equal(sanitizeLevel(51.3), 51);
 });
+
+test('sanitizeLevel falls back to the minimum for a non-numeric value instead of returning NaN', () => {
+  // Without the guard these all flow through as NaN and get written back into the level field,
+  // blanking it. The only current caller checks input.validity first so this is unreachable in
+  // the page today, but that is the caller's invariant, not this function's.
+  assert.equal(sanitizeLevel(NaN), 1);
+  assert.equal(sanitizeLevel(Number('abc')), 1);
+  assert.equal(sanitizeLevel(Infinity), 1);
+});

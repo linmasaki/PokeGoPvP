@@ -60,3 +60,15 @@ test('findExactLevelForCp respects the minLevel/maxLevel bounds', () => {
   const level = findExactLevelForCp(bulbasaur, { atk: 15, def: 15, hp: 15 }, 637, 21, 51);
   assert.equal(level, null);
 });
+
+test('findExactLevelForCp returns the LOWEST level when several levels share the same CP', () => {
+  // Real collision, not a contrived one: calculateCP floors at 10, so a weak enough species sits
+  // at CP 10 across the bottom few levels. Caterpie 0/0/0 is CP 10 at both level 1 and 1.5.
+  // The Calculator writes this straight into the level field, so which one wins is user-visible;
+  // scanning upward and taking the first hit (the lowest level) is the intended behaviour.
+  const caterpie = { atk: 55, def: 55, hp: 128 };
+  const zeroIvs = { atk: 0, def: 0, hp: 0 };
+  assert.equal(calculateCP(caterpie, zeroIvs, getCpmForLevel(1)), 10);
+  assert.equal(calculateCP(caterpie, zeroIvs, getCpmForLevel(1.5)), 10);
+  assert.equal(findExactLevelForCp(caterpie, zeroIvs, 10), 1);
+});

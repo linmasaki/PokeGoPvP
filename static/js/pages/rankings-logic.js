@@ -1,27 +1,3 @@
-export function getCpCapForLeague(league) {
-  const caps = { great: 1500, ultra: 2500, master: Infinity };
-  return caps[league];
-}
-
-export function searchPokemon(query, pokemonList) {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return [];
-
-  const matches = pokemonList.filter((p) => {
-    if (p.speciesName.toLowerCase().includes(normalizedQuery)) return true;
-    return (p.nicknames ?? []).some((n) => n.toLowerCase().includes(normalizedQuery));
-  });
-
-  matches.sort((a, b) => {
-    if (a.dex !== b.dex) return a.dex - b.dex;
-    const aPriority = a.searchPriority ?? Infinity;
-    const bPriority = b.searchPriority ?? Infinity;
-    return aPriority - bPriority;
-  });
-
-  return matches;
-}
-
 export function findAbsoluteRank(rankedList, ivs) {
   const index = rankedList.findIndex(
     (c) => c.ivs.atk === ivs.atk && c.ivs.def === ivs.def && c.ivs.hp === ivs.hp
@@ -46,4 +22,17 @@ export function filterAchievableTop(rankedList, ivFloor, limit) {
 
 export function applyShadowMultiplier(battle) {
   return { atk: battle.atk * 1.2, def: battle.def * 0.8, hp: battle.hp };
+}
+
+// Presentation helpers — pure, so they live here (with the rest of the testable logic) rather
+// than in the DOM module that renders with them. Tier boundaries match the rank-tier--* colour
+// bands documented in the design spec.
+export function getRankTierClass(rank) {
+  if (rank <= 100) return 'rank-tier--top100';
+  if (rank <= 500) return 'rank-tier--mid';
+  return 'rank-tier--low';
+}
+
+export function formatIvTriplet(ivs) {
+  return `${ivs.atk}/${ivs.def}/${ivs.hp}`;
 }

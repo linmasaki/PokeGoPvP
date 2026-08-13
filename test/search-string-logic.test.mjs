@@ -423,7 +423,7 @@ test('the Trash safety invariant holds for the real Eevee family / Great League 
     for (let level = 1; level <= member.maxLevel; level += 0.5) {
       const cpm = getCpmForLevelForTest(level);
       const cp = calculateCPForTest(eevee.baseStats, ivs, cpm);
-      const hp = Math.round(calculateBattleStatsForTest(eevee.baseStats, ivs, cpm).hp);
+      const hp = calculateBattleStatsForTest(eevee.baseStats, ivs, cpm).hp;
 
       assert.ok(
         !trashConditionsFlag(trashConditions, member, cp, hp),
@@ -458,7 +458,7 @@ test('the Trash safety invariant holds above the wild-catch level ceiling too (D
     for (let level = 1; level <= member.maxLevel; level += 0.5) {
       const cpm = getCpmForLevelForTest(level);
       const cp = calculateCPForTest(duskull.baseStats, ivs, cpm);
-      const hp = Math.round(calculateBattleStatsForTest(duskull.baseStats, ivs, cpm).hp);
+      const hp = calculateBattleStatsForTest(duskull.baseStats, ivs, cpm).hp;
       if (level > PROJECTION_MAX_LEVEL) checkedAboveWildCeiling++;
 
       assert.ok(
