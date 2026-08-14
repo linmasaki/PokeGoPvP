@@ -69,7 +69,8 @@
 
     <div class="results-block" id="rankings-results-block" hidden>
       <div class="results-block__label" id="rankings-species-label"></div>
-      <div class="rankings-table-scroll" role="region" tabindex="0" aria-label="排行結果表格，可左右捲動查看更多欄位">
+      {{/* tabindex is added by rankings.js only while the table actually overflows — see syncTableScrollFocusability */}}
+      <div class="rankings-table-scroll" role="region" aria-label="排行結果表格，可左右捲動查看更多欄位">
         <table class="rankings-table">
           <colgroup>
             <col><col><col><col><col><col><col><col><col>

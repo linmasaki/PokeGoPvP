@@ -33,8 +33,20 @@ const speciesLabel = document.getElementById('rankings-species-label');
 const pinnedRowContainer = document.getElementById('rankings-pinned-row-container');
 const top20Body = document.getElementById('rankings-top20-body');
 const noResultsState = document.getElementById('rankings-no-results-state');
+const tableScroll = document.querySelector('.rankings-table-scroll');
 
 const TOP_N = 20;
+
+// A scrollable region needs to be keyboard-focusable so it can be scrolled without a mouse — but
+// only while it actually scrolls. At desktop widths the table fits, and a permanent tabindex just
+// adds a tab stop on something the user cannot interact with.
+function syncTableScrollFocusability() {
+  const overflows = tableScroll.scrollWidth > tableScroll.clientWidth;
+  if (overflows) tableScroll.setAttribute('tabindex', '0');
+  else tableScroll.removeAttribute('tabindex');
+}
+
+window.addEventListener('resize', syncTableScrollFocusability);
 
 function buildRowCells(entry, rankOverride) {
   const battle = state.shadow ? applyShadowMultiplier(entry.battle) : entry.battle;
@@ -87,16 +99,23 @@ function showResults() {
   emptyState.hidden = true;
   resultsBlock.hidden = false;
   noResultsState.hidden = true;
+  // Only measurable once the block is visible — a hidden element reports zero for both widths.
+  syncTableScrollFocusability();
 }
+
+// Last ranking pass, kept so a display-only change can re-render without re-ranking.
+let lastRanked = null;
 
 function runQuery() {
   if (!state.species) {
+    lastRanked = null;
     showEmptyState();
     return;
   }
 
   const pokemon = pokemonList.find((p) => p.speciesId === state.species);
   if (!pokemon) {
+    lastRanked = null;
     showEmptyState();
     return;
   }
@@ -110,14 +129,21 @@ function runQuery() {
   });
 
   if (ranked.length === 0) {
+    lastRanked = null;
     showNoResultsState();
     return;
   }
 
+  lastRanked = { ranked, speciesName: pokemon.speciesName };
   state.rank1StatProduct = ranked[0].statProduct;
+  renderQueryResults();
+}
+
+function renderQueryResults() {
+  const { ranked, speciesName } = lastRanked;
 
   clearResults();
-  speciesLabel.textContent = pokemon.speciesName;
+  speciesLabel.textContent = speciesName;
 
   const userIvs = state.ivs[0];
   const userRank = findAbsoluteRank(ranked, userIvs);
@@ -191,8 +217,11 @@ maxLevelSelect.addEventListener('change', () => {
 });
 
 shadowCheckbox.addEventListener('change', () => {
+  // Shadow only scales the displayed Atk/Def (x1.2 / x0.8) — it does not touch statProduct, so
+  // the ranking is identical either way. Re-render the existing pass instead of re-running the
+  // engine over all 4096 IV combos.
   state.shadow = shadowCheckbox.checked;
-  runQuery();
+  if (lastRanked) renderQueryResults();
 });
 
 loadPokemonList()

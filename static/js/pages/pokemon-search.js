@@ -5,6 +5,11 @@
 
 const POKEMON_DATA_URL = new URL('../data/pokemon.json', import.meta.url);
 
+// A single-letter query matches hundreds of species ("a" matches ~700). The popup only shows a
+// handful at a time, so building every match into a list item with its own click handler on each
+// keystroke is wasted work; anyone looking further down narrows the query instead.
+const MAX_SUGGESTIONS = 50;
+
 // Every page is dead in the water without this list, and a silent failure just leaves the user
 // typing into a search box that never matches anything. Surface it instead: log the real cause
 // for anyone with devtools open, and let the caller decide what to show.
@@ -42,6 +47,9 @@ export function searchPokemon(query, pokemonList) {
 /**
  * Wires up the autocomplete behaviour shared by every page that picks a species.
  *
+ * Follows the ARIA combobox pattern: without those attributes the popup does not exist as far as
+ * a screen reader is concerned, and arrow-key movement through it is announced as nothing at all.
+ *
  * @param {object}        options
  * @param {HTMLElement}   options.input             the text input to search from
  * @param {HTMLElement}   options.list              the <ul> the suggestions render into
@@ -55,8 +63,20 @@ export function searchPokemon(query, pokemonList) {
 export function createAutocomplete({ input, list, containerSelector, getPokemonList, onSelect, onInput }) {
   let activeSuggestionIndex = -1;
 
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-expanded', 'false');
+  input.setAttribute('aria-controls', list.id);
+  input.setAttribute('aria-autocomplete', 'list');
+  list.setAttribute('role', 'listbox');
+
+  function setExpanded(isOpen) {
+    list.hidden = !isOpen;
+    input.setAttribute('aria-expanded', String(isOpen));
+    if (!isOpen) input.removeAttribute('aria-activedescendant');
+  }
+
   function close() {
-    list.hidden = true;
+    setExpanded(false);
   }
 
   function selectSpecies(speciesId) {
@@ -64,7 +84,7 @@ export function createAutocomplete({ input, list, containerSelector, getPokemonL
     if (!pokemon) return;
 
     input.value = pokemon.speciesName;
-    list.hidden = true;
+    setExpanded(false);
     list.innerHTML = '';
 
     onSelect(pokemon);
@@ -75,13 +95,17 @@ export function createAutocomplete({ input, list, containerSelector, getPokemonL
     activeSuggestionIndex = -1;
 
     if (matches.length === 0) {
-      list.hidden = true;
+      setExpanded(false);
       return;
     }
 
-    for (const pokemon of matches) {
+    matches.slice(0, MAX_SUGGESTIONS).forEach((pokemon, index) => {
       const item = document.createElement('li');
       item.className = 'autocomplete-list__item';
+      // aria-activedescendant points at an id, so every option needs one.
+      item.id = `${list.id}-option-${index}`;
+      item.setAttribute('role', 'option');
+      item.setAttribute('aria-selected', 'false');
       item.dataset.speciesId = pokemon.speciesId;
 
       const dexSpan = document.createElement('span');
@@ -93,15 +117,21 @@ export function createAutocomplete({ input, list, containerSelector, getPokemonL
 
       item.addEventListener('click', () => selectSpecies(pokemon.speciesId));
       list.appendChild(item);
-    }
+    });
 
-    list.hidden = false;
+    setExpanded(true);
   }
 
   function updateActiveSuggestion(items) {
     items.forEach((item, index) => {
-      item.classList.toggle('autocomplete-list__item--active', index === activeSuggestionIndex);
+      const isActive = index === activeSuggestionIndex;
+      item.classList.toggle('autocomplete-list__item--active', isActive);
+      item.setAttribute('aria-selected', String(isActive));
     });
+
+    const active = items[activeSuggestionIndex];
+    if (active) input.setAttribute('aria-activedescendant', active.id);
+    else input.removeAttribute('aria-activedescendant');
   }
 
   input.addEventListener('input', () => {
@@ -125,13 +155,13 @@ export function createAutocomplete({ input, list, containerSelector, getPokemonL
       event.preventDefault();
       selectSpecies(items[activeSuggestionIndex].dataset.speciesId);
     } else if (event.key === 'Escape') {
-      list.hidden = true;
+      setExpanded(false);
     }
   });
 
   document.addEventListener('click', (event) => {
     if (!event.target.closest(containerSelector)) {
-      list.hidden = true;
+      setExpanded(false);
     }
   });
 

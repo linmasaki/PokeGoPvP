@@ -4,7 +4,7 @@
 /.hugo_build.lock
 
 # Reference material — unlicensed third-party source, kept locally for behavioral reference only
-/docs/sample/
+/docs/
 
 # Process artifacts — brainstorm specs/plans, not final deliverables
 /docs/superpowers/
