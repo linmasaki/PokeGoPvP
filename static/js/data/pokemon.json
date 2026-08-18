@@ -3639,6 +3639,26 @@
     }
   },
   {
+    "speciesId": "starmie_mega",
+    "speciesName": "Starmie (Mega)",
+    "dex": 121,
+    "searchPriority": null,
+    "nicknames": [],
+    "types": [
+      "water",
+      "psychic"
+    ],
+    "baseStats": {
+      "atk": 276,
+      "def": 229,
+      "hp": 155
+    },
+    "family": {
+      "id": "FAMILY_STARYU",
+      "parent": "staryu"
+    }
+  },
+  {
     "speciesId": "mr_mime",
     "speciesName": "Mr. Mime",
     "dex": 122,
@@ -18305,7 +18325,7 @@
       "evolutions": [
         "lycanroc_midnight",
         "lycanroc_midday",
-        "lycranroc_dusk"
+        "lycanroc_dusk"
       ]
     }
   },
