@@ -140,6 +140,7 @@ function runQuery() {
 }
 
 function renderQueryResults() {
+  if (!lastRanked) return;
   const { ranked, speciesName } = lastRanked;
 
   clearResults();
@@ -221,7 +222,7 @@ shadowCheckbox.addEventListener('change', () => {
   // the ranking is identical either way. Re-render the existing pass instead of re-running the
   // engine over all 4096 IV combos.
   state.shadow = shadowCheckbox.checked;
-  if (lastRanked) renderQueryResults();
+  renderQueryResults();
 });
 
 loadPokemonList()

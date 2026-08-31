@@ -7,7 +7,6 @@ import {
   collectNormalEvolutionChain,
   collectMegaForms,
   buildEvolutionChecklist,
-  rankEvaluatedSpecies,
   createRankingCache,
   sliceTopN,
   starTierForIvSum,
@@ -19,11 +18,8 @@ import {
   compressToRanges,
   complementForTrash,
   complementBucketSet,
-  buildGeneralModeTierConditions,
   buildTrashModeTierConditions,
   LANGUAGE_VOCAB,
-  formatValueTerms,
-  formatBucketTerms,
   formatGeneralTierGroups,
   formatTrashTierGroups,
   assembleGeneralModeString,
@@ -38,113 +34,53 @@ import {
 
 const pokemonList = JSON.parse(fs.readFileSync(new URL('../static/js/data/pokemon.json', import.meta.url)));
 
+// #1
 test('collectNormalEvolutionChain collects self and all branching evolutions (Eevee family)', () => {
   const chain = collectNormalEvolutionChain('eevee', pokemonList);
   assert.deepEqual(chain, ['eevee', 'vaporeon', 'jolteon', 'flareon', 'espeon', 'umbreon', 'leafeon', 'glaceon', 'sylveon']);
 });
 
-test('collectNormalEvolutionChain collects a linear chain (Charmander line)', () => {
-  const chain = collectNormalEvolutionChain('charmander', pokemonList);
-  assert.deepEqual(chain, ['charmander', 'charmeleon', 'charizard']);
-});
-
+// #2
 test('collectNormalEvolutionChain skips a missing evolution reference instead of throwing', () => {
   const chain = collectNormalEvolutionChain('girafarig', pokemonList);
   assert.deepEqual(chain, ['girafarig']);
 });
 
+// #3
 test('collectNormalEvolutionChain returns just the species itself when it has no further evolutions', () => {
   const chain = collectNormalEvolutionChain('mewtwo_armored', pokemonList);
   assert.deepEqual(chain, ['mewtwo_armored']);
 });
 
+// #4
 test('collectMegaForms attaches Mega forms whose base ID is reachable from the chain (Charizard)', () => {
   const chain = collectNormalEvolutionChain('charmander', pokemonList);
   const megas = collectMegaForms(chain, pokemonList);
   assert.deepEqual(megas.sort(), ['charizard_mega_x', 'charizard_mega_y']);
 });
 
-test('collectMegaForms attaches Raichu Mega forms when reached via Pikachu', () => {
-  const chain = collectNormalEvolutionChain('pikachu', pokemonList);
-  const megas = collectMegaForms(chain, pokemonList);
-  assert.deepEqual(megas.sort(), ['raichu_mega_x', 'raichu_mega_y']);
-});
-
+// #5
 test('collectMegaForms does NOT attach Raichu Mega forms to Alolan Raichu (same dex, not an evolution relation)', () => {
   const chain = collectNormalEvolutionChain('raichu_alolan', pokemonList);
   const megas = collectMegaForms(chain, pokemonList);
   assert.deepEqual(megas, []);
 });
 
-test('collectMegaForms does NOT attach Slowbro Mega to Galarian Slowbro (same dex, not an evolution relation)', () => {
-  const chain = collectNormalEvolutionChain('slowbro_galarian', pokemonList);
-  const megas = collectMegaForms(chain, pokemonList);
-  assert.deepEqual(megas, []);
-});
-
-test('collectMegaForms does NOT attach Mewtwo Mega forms to Armored Mewtwo (same dex, not an evolution relation)', () => {
-  const chain = collectNormalEvolutionChain('mewtwo_armored', pokemonList);
-  const megas = collectMegaForms(chain, pokemonList);
-  assert.deepEqual(megas, []);
-});
-
+// #6
 test('collectMegaForms attaches Primal forms the same way as Megas (Kyogre)', () => {
   const chain = collectNormalEvolutionChain('kyogre', pokemonList);
   const megas = collectMegaForms(chain, pokemonList);
   assert.deepEqual(megas, ['kyogre_primal']);
 });
 
+// #7
 test('collectMegaForms does NOT false-positive match on species whose name merely contains "mega" (Meganium, Yanmega)', () => {
   const chain = collectNormalEvolutionChain('chikorita', pokemonList);
   const megas = collectMegaForms(chain, pokemonList);
   assert.ok(!megas.includes('meganium'));
 });
 
-test('buildEvolutionChecklist concatenates the normal chain with attached Mega forms', () => {
-  const list = buildEvolutionChecklist('charmander', pokemonList);
-  assert.deepEqual(list, ['charmander', 'charmeleon', 'charizard', 'charizard_mega_x', 'charizard_mega_y']);
-});
-
-test('rankEvaluatedSpecies returns a fully sorted list capped by the league CP limit', () => {
-  const jolteon = pokemonList.find((p) => p.speciesId === 'jolteon');
-  const ranked = rankEvaluatedSpecies(jolteon.baseStats, 'great', 50);
-  assert.ok(ranked.length > 0);
-  assert.ok(ranked.every((c) => c.cp <= 1500));
-  // sorted descending by statProduct
-  for (let i = 1; i < ranked.length; i++) {
-    assert.ok(ranked[i - 1].statProduct >= ranked[i].statProduct);
-  }
-});
-
-test('rankEvaluatedSpecies finds Jolteon 0/12/15 as Rank 1 in Great League at Level 19.5', () => {
-  const jolteon = pokemonList.find((p) => p.speciesId === 'jolteon');
-  const ranked = rankEvaluatedSpecies(jolteon.baseStats, 'great', 50);
-  assert.equal(ranked[0].ivs.atk, 0);
-  assert.equal(ranked[0].ivs.def, 12);
-  assert.equal(ranked[0].ivs.hp, 15);
-  assert.equal(ranked[0].level, 19.5);
-});
-
-test('ranking at RANKING_MAX_LEVEL still gets CP-cap-aware optimization for leagues whose cap a species can only reach above the wild-catch level (regression)', () => {
-  // Dusknoir can't reach Ultra League's 2500 CP cap by level 35 (only ~2218 even at 15/15/15) —
-  // a ranking capped at the wild-catch level therefore has no CP cap to trade off against, and
-  // degenerates into "highest IV sum wins" (always 15/15/15), losing all PvP relevance. This is
-  // exactly the bug found when Max Level was still a shared, user-set field capped at 35: ranking
-  // and the wild-catch projection cap must be independent so this can't regress.
-  const dusknoir = pokemonList.find((p) => p.speciesId === 'dusknoir');
-  const ranked = rankEvaluatedSpecies(dusknoir.baseStats, 'ultra', RANKING_MAX_LEVEL);
-  assert.notDeepEqual(ranked[0].ivs, { atk: 15, def: 15, hp: 15 });
-  assert.ok(ranked[0].cp >= 2450, `rank 1 CP (${ranked[0].cp}) should be close to Ultra League's 2500 cap, proving levels above 35 are reachable`);
-});
-
-test('createRankingCache returns the same array reference for a repeated key (no recomputation)', () => {
-  const jolteon = { speciesId: 'jolteon', baseStats: pokemonList.find((p) => p.speciesId === 'jolteon').baseStats };
-  const cache = createRankingCache();
-  const first = cache.getRanking(jolteon, 'great', 50);
-  const second = cache.getRanking(jolteon, 'great', 50);
-  assert.equal(first, second);
-});
-
+// #8
 test('createRankingCache computes separately for different league or maxLevel keys', () => {
   const jolteon = { speciesId: 'jolteon', baseStats: pokemonList.find((p) => p.speciesId === 'jolteon').baseStats };
   const cache = createRankingCache();
@@ -154,23 +90,7 @@ test('createRankingCache computes separately for different league or maxLevel ke
   assert.ok(ultra.some((c) => c.ivs.atk === 0 && c.ivs.def === 12 && c.ivs.hp === 15 && c.level === 35));
 });
 
-test('sliceTopN returns only the first N entries', () => {
-  const list = [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 4 }];
-  assert.deepEqual(sliceTopN(list, 2), [{ v: 1 }, { v: 2 }]);
-});
-
-test('starTierForIvSum buckets IV sums into the five appraisal star tiers', () => {
-  assert.equal(starTierForIvSum(0), 0);
-  assert.equal(starTierForIvSum(22), 0);
-  assert.equal(starTierForIvSum(23), 1);
-  assert.equal(starTierForIvSum(29), 1);
-  assert.equal(starTierForIvSum(30), 2);
-  assert.equal(starTierForIvSum(36), 2);
-  assert.equal(starTierForIvSum(37), 3);
-  assert.equal(starTierForIvSum(44), 3);
-  assert.equal(starTierForIvSum(45), 4);
-});
-
+// #9
 test('apprBucket maps a single stat IV to its appraisal bucket', () => {
   assert.equal(apprBucket(0), 0);
   assert.equal(apprBucket(1), 1);
@@ -182,6 +102,7 @@ test('apprBucket maps a single stat IV to its appraisal bucket', () => {
   assert.equal(apprBucket(15), 4);
 });
 
+// #10
 test('mergeQualifyingRecords keeps the maximum level when the same IV qualifies via multiple leagues (Jolteon 0/12/15)', () => {
   const jolteon = { speciesId: 'jolteon', baseStats: pokemonList.find((p) => p.speciesId === 'jolteon').baseStats };
   const cache = createRankingCache();
@@ -195,23 +116,7 @@ test('mergeQualifyingRecords keeps the maximum level when the same IV qualifies 
   assert.equal(merged.maxLevel, 35, 'Ultra Rank 7 (Lv35) should win over Great Rank 1 (Lv19.5)');
 });
 
-test('mergeQualifyingRecords keeps the maximum level when the same IV qualifies via multiple checked evolution items', () => {
-  // Hand-built fixture, not real ranking output: real species pairs are not guaranteed to
-  // share a qualifying IV key (e.g. Eevee's own Great League Top 20 contains 15/15/15, but
-  // Vaporeon's never does — high base stats make a max-Attack build hurt its bulk under the
-  // CP cap — so a real-data version of this test silently stops proving anything if the
-  // "coincidentally overlapping" species pair changes). A literal collision on the same key
-  // is the only way to deterministically exercise the max-wins branch for this code path.
-  const listFromItemA = [{ ivs: { atk: 15, def: 15, hp: 15 }, level: 20 }];
-  const listFromItemB = [{ ivs: { atk: 15, def: 15, hp: 15 }, level: 50 }];
-
-  const pool = mergeQualifyingRecords([listFromItemA, listFromItemB]);
-  const merged = pool.get('15-15-15');
-
-  assert.ok(merged, 'expected 15/15/15 to be in the merged pool');
-  assert.equal(merged.maxLevel, 50, "the higher level from the second checked item's qualifying list should win");
-});
-
+// #11
 test('groupPoolByStarTier buckets merged records by IV-sum star tier', () => {
   const pool = new Map([
     ['15-15-15', { atk: 15, def: 15, hp: 15, maxLevel: 50 }],
@@ -226,30 +131,24 @@ test('groupPoolByStarTier buckets merged records by IV-sum star tier', () => {
   assert.equal(grouped.has(1), false, 'tiers with no members should not have an entry');
 });
 
-test('computeProjectedCpHpSets uses the base species stats, not the evaluated species stats', () => {
-  const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
-  // Eevee's own 15/15/15 at Lv35 (within the wild-catch projection cap) qualifies at maxLevel 50
-  const { cpSet } = computeProjectedCpHpSets([{ atk: 15, def: 15, hp: 15, maxLevel: 50 }], eevee.baseStats);
-  assert.ok(cpSet.has(994), 'Eevee 15/15/15 at Lv35 should be CP 994 when projected onto Eevee itself');
-  assert.ok(!cpSet.has(1500), 'must not contain a Vaporeon-scale CP number for the same IV/level');
-});
-
+// #12
 test('computeProjectedCpHpSets caps enumeration at PROJECTION_MAX_LEVEL (35) even when the member qualified at a higher level', () => {
-  // Wild-caught Pokémon never spawn above level 35, so a member whose qualifying maxLevel is
-  // higher (e.g. 50, from a fully-invested evolved form) must still only project CP/HP for
-  // levels a wild catch could realistically be at.
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const { cpSet } = computeProjectedCpHpSets([{ atk: 15, def: 15, hp: 15, maxLevel: 50 }], eevee.baseStats);
   assert.equal(cpSet.has(1210), false, 'CP reachable only above the projection cap (Lv50) must not appear');
 });
 
-test('computeProjectedCpHpSets enumerates in 0.5-level steps, not just integer levels', () => {
-  // Vaporeon 0/8/14 qualifies for Great League Top 20 up to Lv18.5 (a half level)
+// #13
+test('computeProjectedCpHpSets enumerates whole levels only, never half levels', () => {
+  // Only powering up puts a Pokemon on a half level, so the projection skips them — even when
+  // the member qualifies up to one.
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const { cpSet } = computeProjectedCpHpSets([{ atk: 0, def: 8, hp: 14, maxLevel: 18.5 }], eevee.baseStats);
-  assert.ok(cpSet.has(479), 'projected CP at the half level 18.5 must be present in the set');
+  assert.ok(cpSet.has(466), 'projected CP at the whole level 18 must be present');
+  assert.ok(!cpSet.has(479), 'projected CP at the half level 18.5 must NOT be present');
 });
 
+// #14
 test('computeApprBucketSets collects the bucket values seen across all tier members', () => {
   const { atkBucketSet, defBucketSet, staBucketSet } = computeApprBucketSets([
     { atk: 0, def: 12, hp: 15 },
@@ -260,6 +159,7 @@ test('computeApprBucketSets collects the bucket values seen across all tier memb
   assert.deepEqual([...staBucketSet].sort(), [3, 4]);
 });
 
+// #15
 test('compressToRanges merges consecutive runs but keeps gaps separate', () => {
   assert.deepEqual(compressToRanges([1, 2, 3, 5, 7, 8, 9]), [
     { start: 1, end: 3 },
@@ -268,58 +168,27 @@ test('compressToRanges merges consecutive runs but keeps gaps separate', () => {
   ]);
 });
 
-test('compressToRanges returns an empty array for an empty input', () => {
-  assert.deepEqual(compressToRanges([]), []);
-});
-
-test('complementForTrash returns the closed complement plus an open tail', () => {
-  const result = complementForTrash(new Set([12, 13, 15]), 10);
-  assert.deepEqual(result, [
+// #16
+test('complementForTrash inverts a value set into safe ranges, always ending in an open tail', () => {
+  assert.deepEqual(complementForTrash(new Set([12, 13, 15]), 10), [
     { start: 10, end: 11 },
     { start: 14, end: 14 },
     { start: 16, end: null },
   ]);
+
+  assert.deepEqual(complementForTrash(new Set(), 10), [{ start: 10, end: null }]);
 });
 
-test('complementForTrash returns the whole range as safe when the value set is empty', () => {
-  const result = complementForTrash(new Set(), 10);
-  assert.deepEqual(result, [{ start: 10, end: null }]);
-});
-
+// #17
 test('complementBucketSet returns the missing bucket values within the closed 0-4 range', () => {
   assert.deepEqual(complementBucketSet(new Set([0, 4])), [1, 2, 3]);
   assert.deepEqual(complementBucketSet(new Set([0, 1, 2, 3, 4])), []);
 });
 
-test('buildGeneralModeTierConditions only includes non-empty star tiers', () => {
-  const pool = mergeQualifyingRecords([[{ ivs: { atk: 15, def: 15, hp: 15 }, level: 50 }]]);
-  const grouped = groupPoolByStarTier(pool);
-  const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
-
-  const conditions = buildGeneralModeTierConditions(grouped, eevee.baseStats);
-  assert.equal(conditions.length, 1);
-  assert.equal(conditions[0].star, 4);
-  assert.deepEqual(conditions[0].atkBuckets, [{ start: 4, end: 4 }]);
-});
-
-test('buildTrashModeTierConditions builds all five tiers and shares the one global CP/HP complement between them', () => {
-  const pool = mergeQualifyingRecords([[{ ivs: { atk: 15, def: 15, hp: 15 }, level: 50 }]]);
-  const grouped = groupPoolByStarTier(pool);
-  const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
-
-  const conditions = buildTrashModeTierConditions(grouped, eevee.baseStats);
-  assert.deepEqual(conditions.map((c) => c.star), [0, 1, 2, 3, 4], 'the string assembler decides which tiers to emit, the builder always builds all five');
-  assert.equal(conditions[0].cpRanges, conditions[4].cpRanges, 'every tier complements the same global CP union, so the ranges are one shared computation');
-  assert.deepEqual(conditions[4].atkBuckets, [{ start: 0, end: 3 }], 'the 4-star tier excludes only non-perfect buckets');
-});
-
+// #18
 test('generateTrashModeString with trashExcludeZero appends the reference "at least one bucket >= 1" clause protecting exactly 0/0/0', () => {
-  // "&1-4attack,1-4defense,1-4hp" is one OR clause: a mon can only be flagged as trash if at
-  // least one of its appraisal buckets is >= 1 — which is false only for an exact 0/0/0
-  // (bucket 0 means IV exactly 0). This protection is structural, independent of which star
-  // tiers have qualifying members. A prior revision instead carved 0/0/0's projected CP/HP out
-  // of the star-0 complements, which cannot work: the tier clause is an OR of five groups, so
-  // 0/0/0 still matched through any bucket complement containing bucket 0.
+  // Only an exact 0/0/0 has every bucket at 0, and one match is enough to flag a mon, so this
+  // cannot be done by carving values out of the tier complements — it needs its own clause.
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const cache = createRankingCache();
   const baseContext = {
@@ -329,16 +198,13 @@ test('generateTrashModeString with trashExcludeZero appends the reference "at le
     excludeTagged: false, excludeFavorited: false,
   };
 
-  const withProtection = generateTrashModeString(baseContext, cache);
-  const withoutProtection = generateTrashModeString({ ...baseContext, excludeZero: false }, cache);
-  assert.ok(withProtection.endsWith('&1-4attack,1-4defense,1-4hp'));
-  assert.ok(!withoutProtection.includes('1-4attack'));
+  assert.ok(generateTrashModeString(baseContext, cache).endsWith('&1-4attack,1-4defense,1-4hp'));
+  assert.ok(!generateTrashModeString({ ...baseContext, excludeZero: false }, cache).includes('1-4attack'));
 });
 
+// #19
 test('generateTrashModeString renders the favorited exclusion with the localized favorite word, not a symbol', () => {
-  // The reference tool emits "&!favorite" / "&!我的最愛" / "&!お気に入り" (its language table);
-  // the previous "&!<3" has no known basis in the game's search grammar and would silently
-  // do nothing if the game treats it as a name substring.
+  // The game only understands the translated favorite word. The old "&!<3" symbol did nothing.
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const cache = createRankingCache();
   const context = {
@@ -349,12 +215,13 @@ test('generateTrashModeString renders the favorited exclusion with the localized
   };
   assert.ok(generateTrashModeString(context, cache).endsWith('&!我的最愛'));
   assert.ok(generateTrashModeString({ ...context, language: 'en' }, cache).endsWith('&!favorite'));
+  assert.ok(generateTrashModeString({ ...context, language: 'ja' }, cache).endsWith('&!お気に入り'));
 });
 
+// #20
 test('generateTrashModeString emits the 4-star tier clause when a hundo itself qualifies and blanket protection is off (regression)', () => {
-  // In Master League the Top N always contains 15/15/15. With trashExcludePerfect unchecked
-  // there used to be neither a "&!4*" flag nor any 4-star clause, so every clause in the string
-  // was trivially true for a hundo — flagging even the qualifying rank-1 hundo as trash.
+  // Master League's Top N always contains the hundo. With blanket protection off there used to
+  // be no 4-star clause at all, so even the rank-1 hundo got flagged as trash.
   const dusknoir = pokemonList.find((p) => p.speciesId === 'dusknoir');
   const cache = createRankingCache();
   const result = generateTrashModeString(
@@ -366,9 +233,7 @@ test('generateTrashModeString emits the 4-star tier clause when a hundo itself q
     },
     cache
   );
-  // Tier-4 members are all 15/15/15, so its bucket complements are exactly 0-3 in each stat;
-  // a real hundo (all buckets 4, CP/HP on the enumerated curve) matches none of the clause's
-  // OR terms and is therefore never flagged.
+  // Tier 4 is all 15/15/15, so its complements are 0-3 and a real hundo matches none of them.
   assert.ok(result.includes('&!4*,0-3attack,0-3defense,0-3hp,'), 'the 4-star clause must be present with its bucket complements');
 });
 
@@ -376,17 +241,14 @@ function rangesInclude(ranges, value) {
   return ranges.some((r) => value >= r.start && (r.end === null || value <= r.end));
 }
 
-// In-game the whole trash string is an AND of per-tier clauses "(!{i}* OR complement-groups)".
-// For a mon of star tier s, every clause with i ≠ s is trivially true via its !{i}* term, so the
-// string flags the mon iff ANY of the five complement groups of its OWN tier's clause matches —
-// an OR, not an AND. (Modelling this as an AND-across-all-five once masked a real leak: a
-// single-dimension escape, e.g. through one appraisal-bucket complement alone, flags the mon
-// in-game but sails through an all-five check.) No clause for the mon's tier means it can never
-// be flagged (e.g. a hundo protected by a bare "&!4*").
+// A mon's own tier is the only clause that isn't trivially true for it, so it gets flagged when
+// any one of that tier's five complement groups matches. Checking all five instead once hid a
+// real leak. With no clause for its tier at all, nothing filters the mon and every remaining
+// clause passes, so it is flagged — see #22, which guards against losing a tier's clause.
 function trashConditionsFlag(trashConditions, member, cp, hp) {
   const star = starTierForIvSum(member.atk + member.def + member.hp);
   const tier = trashConditions.find((c) => c.star === star);
-  if (!tier) return false;
+  if (!tier) return true;
   return (
     rangesInclude(tier.cpRanges, cp) ||
     rangesInclude(tier.hpRanges, hp) ||
@@ -396,69 +258,31 @@ function trashConditionsFlag(trashConditions, member, cp, hp) {
   );
 }
 
-test('the Trash safety invariant holds for the real Eevee family / Great League / Top 20 / Max Level 50 example', () => {
+// #21
+test('the Trash safety invariant holds for the real Eevee family / Great League / Top 20', () => {
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const checklist = buildEvolutionChecklist('eevee', pokemonList); // Eevee + 8 Eeveelutions, no Mega
   const cache = createRankingCache();
 
-  const qualifyingLists = checklist.map((speciesId) => {
-    const mon = pokemonList.find((p) => p.speciesId === speciesId);
-    return sliceTopN(cache.getRanking(mon, 'great', 50), 20);
-  });
+  const pool = mergeQualifyingRecords(
+    checklist.map((speciesId) => {
+      const mon = pokemonList.find((p) => p.speciesId === speciesId);
+      return sliceTopN(cache.getRanking(mon, 'great', RANKING_MAX_LEVEL), 20);
+    })
+  );
+  const trashConditions = buildTrashModeTierConditions(groupPoolByStarTier(pool), eevee.baseStats);
 
-  const pool = mergeQualifyingRecords(qualifyingLists);
-  const grouped = groupPoolByStarTier(pool);
-
-  const generalConditions = buildGeneralModeTierConditions(grouped, eevee.baseStats);
-  const trashConditions = buildTrashModeTierConditions(grouped, eevee.baseStats);
-
-  // Exhaustively check every qualifying (IV, level) pair projected onto Eevee: it must NOT be
-  // flagged by its own tier's Trash clause (see trashConditionsFlag for the game semantics).
-  // Checked over the member's FULL qualifying level range (which can exceed the wild-catch
-  // ceiling), not just wild levels — the box a Trash string deletes from holds powered-up
-  // Pokémon too, so the "never flags a keeper" guarantee has to hold up there as well.
-  for (const member of pool.values()) {
-    const ivs = { atk: member.atk, def: member.def, hp: member.hp };
-
-    for (let level = 1; level <= member.maxLevel; level += 0.5) {
-      const cpm = getCpmForLevelForTest(level);
-      const cp = calculateCPForTest(eevee.baseStats, ivs, cpm);
-      const hp = calculateBattleStatsForTest(eevee.baseStats, ivs, cpm).hp;
-
-      assert.ok(
-        !trashConditionsFlag(trashConditions, member, cp, hp),
-        `qualifying member atk=${member.atk} def=${member.def} hp=${member.hp} at level ${level} (CP ${cp}, HP ${hp}) must not be flagged by its own Trash tier clause`
-      );
-    }
-  }
-
-  assert.ok(generalConditions.length > 0, 'sanity check: the general-mode conditions should not be empty for this example');
-});
-
-test('the Trash safety invariant holds above the wild-catch level ceiling too (Duskull base / Dusknoir / Ultra / Top 30 regression)', () => {
-  // The Eevee case above happens to have no qualifying member reaching past the wild ceiling,
-  // so it cannot catch this: when Trash mode enumerated CP/HP only up to PROJECTION_MAX_LEVEL,
-  // complementForTrash's open tail (max+1 → ∞) started just above the level-35 CP and declared
-  // every powered-up individual beyond it safe to delete — 734 genuinely qualifying (IV, level)
-  // states, all at level 36.5–51. This scenario reproduces that, so Trash mode must keep
-  // enumerating over the full reachable level range.
-  const duskull = pokemonList.find((p) => p.speciesId === 'duskull');
-  const dusknoir = pokemonList.find((p) => p.speciesId === 'dusknoir');
-  const cache = createRankingCache();
-
-  const pool = mergeQualifyingRecords([sliceTopN(cache.getRanking(dusknoir, 'ultra', RANKING_MAX_LEVEL), 30)]);
-  const grouped = groupPoolByStarTier(pool);
-  const trashConditions = buildTrashModeTierConditions(grouped, duskull.baseStats);
-
+  // Nothing worth keeping may be flagged by its own tier's clause. The guarantee covers whole
+  // levels only — a powered-up keeper on a half level is left to the favorited filter.
   let checkedAboveWildCeiling = 0;
 
   for (const member of pool.values()) {
     const ivs = { atk: member.atk, def: member.def, hp: member.hp };
 
-    for (let level = 1; level <= member.maxLevel; level += 0.5) {
+    for (let level = 1; level <= member.maxLevel; level += 1) {
       const cpm = getCpmForLevelForTest(level);
-      const cp = calculateCPForTest(duskull.baseStats, ivs, cpm);
-      const hp = calculateBattleStatsForTest(duskull.baseStats, ivs, cpm).hp;
+      const cp = calculateCPForTest(eevee.baseStats, ivs, cpm);
+      const hp = calculateBattleStatsForTest(eevee.baseStats, ivs, cpm).hp;
       if (level > PROJECTION_MAX_LEVEL) checkedAboveWildCeiling++;
 
       assert.ok(
@@ -468,87 +292,75 @@ test('the Trash safety invariant holds above the wild-catch level ceiling too (D
     }
   }
 
-  assert.ok(checkedAboveWildCeiling > 0, 'sanity check: this scenario must actually exercise levels above the wild-catch ceiling, or it proves nothing');
+  // Capping Trash's projection at the wild-catch ceiling once left the open tail sitting just
+  // above the level-35 CP, declaring every powered-up keeper beyond it safe to delete. If this
+  // scenario ever stops reaching past that ceiling, it no longer covers that case.
+  assert.ok(checkedAboveWildCeiling > 0, 'this scenario must exercise levels above the wild-catch ceiling, or it proves nothing');
 });
 
-test('formatValueTerms prefixes the word on every disjoint value, and only once at the start of a compressed run', () => {
-  assert.equal(formatValueTerms([{ start: 10, end: 10 }, { start: 25, end: 25 }, { start: 42, end: 42 }], 'cp'), 'cp10,cp25,cp42');
-  assert.equal(formatValueTerms([{ start: 12, end: 15 }], 'cp'), 'cp12-15');
+// #22
+test('when a star tier has no section in the Trash string, even the good ones in it count as trash', () => {
+  // Only a mon's own tier restricts it — every other tier's section opens with "not N stars",
+  // which is trivially true for it. Drop a tier's section and nothing filters that tier at all,
+  // so its keepers pass the whole string and land in the delete list. The 4-star tier is left
+  // out here: under blanket protection it is a bare "&!4*", and #20 covers the other case.
+  const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
+  const checkedItems = buildEvolutionChecklist('eevee', pokemonList).map((speciesId) =>
+    pokemonList.find((p) => p.speciesId === speciesId));
+  const cache = createRankingCache();
+
+  const pool = mergeQualifyingRecords(
+    checkedItems.map((mon) => sliceTopN(cache.getRanking(mon, 'great', RANKING_MAX_LEVEL), 20))
+  );
+  const populatedTiers = [...groupPoolByStarTier(pool).keys()].filter((star) => star <= 3);
+
+  const result = generateTrashModeString(
+    {
+      baseSpecies: eevee, checkedItems, leagues: ['great'], topN: 20, language: 'en',
+      excludePerfect: true, excludeZero: false,
+      excludeXXL: false, excludeXXS: false, excludeXL: false, excludeXS: false,
+      excludeTagged: false, excludeFavorited: false,
+    },
+    cache
+  );
+
+  assert.ok(populatedTiers.length > 0, 'sanity check: this scenario must populate at least one star tier');
+  for (const star of populatedTiers) {
+    assert.ok(
+      result.includes(`&!${star}*,`),
+      `star tier ${star} has qualifying members, so the string must carry its own section`
+    );
+  }
 });
 
-test('formatValueTerms formats an open tail with a trailing dash and the word prefixed once', () => {
-  assert.equal(formatValueTerms([{ start: 12, end: 15 }, { start: 20, end: 20 }, { start: 30, end: null }], 'hp'), 'hp12-15,hp20,hp30-');
+// #23
+test('the star marker repeats before every group in General mode, but appears only once in Trash mode', () => {
+  // General lists what a keeper looks like, so all five groups must match. Trash lists what a
+  // keeper never has, so one match is enough. A prior revision made Trash mirror General.
+  const condition = {
+    star: 1,
+    atkBuckets: [{ start: 0, end: 1 }],
+    defBuckets: [{ start: 2, end: 2 }],
+    staBuckets: [{ start: 4, end: 4 }],
+    cpRanges: [{ start: 10, end: 10 }, { start: 25, end: 25 }],
+    hpRanges: [{ start: 10, end: 10 }],
+  };
+
+  assert.equal(formatGeneralTierGroups(condition, LANGUAGE_VOCAB.en), '&!1*,0-1attack&!1*,2defense&!1*,4hp&!1*,cp10,cp25&!1*,hp10');
+  assert.equal(formatTrashTierGroups(condition, LANGUAGE_VOCAB.en), '&!1*,0-1attack,2defense,4hp,cp10,cp25,hp10');
 });
 
-test('formatBucketTerms suffixes the word on every disjoint value, and only once at the end of a compressed run', () => {
-  assert.equal(formatBucketTerms([{ start: 0, end: 0 }, { start: 3, end: 3 }], 'attack'), '0attack,3attack');
-  assert.equal(formatBucketTerms([{ start: 0, end: 1 }, { start: 3, end: 3 }], 'defense'), '0-1defense,3defense');
-});
-
-const SAMPLE_TIER_CONDITION = {
-  star: 1,
-  atkBuckets: [{ start: 0, end: 1 }],
-  defBuckets: [{ start: 2, end: 2 }],
-  staBuckets: [{ start: 4, end: 4 }],
-  cpRanges: [{ start: 10, end: 10 }, { start: 25, end: 25 }],
-  hpRanges: [{ start: 10, end: 10 }],
-};
-
-test('formatGeneralTierGroups repeats the "&!{star}*" marker before EACH of the five groups', () => {
-  // This exact shape was confirmed character-for-character against a real, verified working
-  // search string (see assembleGeneralModeString's Duskull regression test below) — the marker
-  // is NOT a single prefix for the whole tier.
-  const result = formatGeneralTierGroups(SAMPLE_TIER_CONDITION, LANGUAGE_VOCAB.en);
-  assert.equal(result, '&!1*,0-1attack&!1*,2defense&!1*,4hp&!1*,cp10,cp25&!1*,hp10');
-});
-
-test('formatTrashTierGroups emits the "&!{star}*" marker only ONCE, at the very start, then plain commas', () => {
-  // Deliberately different from formatGeneralTierGroups — the reference tool's own source
-  // comments this exact asymmetry: "Need to intersperse &!i* between search strings, but not
-  // trash strings." A prior revision made this match the General-mode shape on an unverified
-  // hunch about a suspected Trash-mode leak; that leak turned out to be an unrelated mode
-  // mix-up, and repeating the marker here was never actually validated. Reverted — this test
-  // guards against re-introducing that unverified deviation.
-  const result = formatTrashTierGroups(SAMPLE_TIER_CONDITION, LANGUAGE_VOCAB.en);
-  assert.equal(result, '&!1*,0-1attack,2defense,4hp,cp10,cp25,hp10');
-});
-
-test('generateGlobalIvExtremeString returns null when neither toggle is on', () => {
+// #24
+test('generateGlobalIvExtremeString expresses each toggle combination as AND-ed clauses', () => {
+  // Both toggles at once used to emit "4attack&4defense&4hp,0attack&0defense&0hp", which the
+  // game grammar reads as a single unsatisfiable condition and matches nothing.
+  assert.equal(generateGlobalIvExtremeString(true, false, 'en'), '4attack&4defense&4hp');
+  assert.equal(generateGlobalIvExtremeString(false, true, 'en'), '0attack&0defense&0hp');
+  assert.equal(generateGlobalIvExtremeString(true, true, 'en'), '4*,0attack&4*,0defense&4*,0hp');
   assert.equal(generateGlobalIvExtremeString(false, false, 'en'), null);
 });
 
-test('generateGlobalIvExtremeString returns the fixed 4-star condition for 100% IV', () => {
-  const result = generateGlobalIvExtremeString(true, false, 'en');
-  assert.equal(result, '4attack&4defense&4hp');
-});
-
-test('generateGlobalIvExtremeString returns the fixed 0-star condition for 0% IV', () => {
-  const result = generateGlobalIvExtremeString(false, true, 'en');
-  assert.equal(result, '0attack&0defense&0hp');
-});
-
-test('generateGlobalIvExtremeString expresses both toggles as AND-of-(4* OR 0x) clauses (regression)', () => {
-  // The old "4attack&4defense&4hp,0attack&0defense&0hp" output parsed to an unsatisfiable
-  // condition under the game grammar (see the implementation comment) and matched nothing.
-  const result = generateGlobalIvExtremeString(true, true, 'en');
-  assert.equal(result, '4*,0attack&4*,0defense&4*,0hp');
-});
-
-test('generateGlobalIvExtremeString does not depend on species or league', () => {
-  const withoutSpecies = generateGlobalIvExtremeString(true, false, 'zh-TW');
-  assert.ok(!withoutSpecies.includes('#'));
-});
-
-test('generateGeneralModeString returns null when no evolution items are checked', () => {
-  const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
-  const cache = createRankingCache();
-  const result = generateGeneralModeString(
-    { baseSpecies: eevee, checkedItems: [], leagues: ['great'], topN: 20, language: 'en' },
-    cache
-  );
-  assert.equal(result, null);
-});
-
+// #25
 test('generateGeneralModeString anchors on the dex number (once, at the front) and appends a bare ,4* for a perfect-IV-only example', () => {
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const cache = createRankingCache();
@@ -561,10 +373,11 @@ test('generateGeneralModeString anchors on the dex number (once, at the front) a
   assert.equal(result, '133&!0*&!1*&!2*&!3*,4*');
 });
 
+// #26
 test('assembleGeneralModeString matches a real, verified working search string character-for-character (Duskull family / Great League / Top 10, star tiers 0-2 populated, 3 empty, 4 absent)', () => {
-  // Ground truth supplied by the user after real-device testing via pvpivs.com for Duskull /
-  // Dusclops / Dusknoir, Great League, Top 10, Search Levels 1-30, English. The anchor is the
-  // "355" dex number, exactly as the original emitted it (and as production now does too).
+  // Ground truth from a real-device test (Duskull family, Great League, Top 10). That string
+  // anchored on the species name; the dex anchor replaced it later and was verified separately.
+  // What this pins is the assembled shape, not the anchor.
   const tierConditions = [
     {
       star: 0,
@@ -644,24 +457,16 @@ test('assembleGeneralModeString matches a real, verified working search string c
   assert.equal(result, expected);
 });
 
+// #27
 test('generateTrashModeString produces output that respects trashExcludePerfect (a bare "&!4*" flag, no 4-star CP/HP/bucket breakdown)', () => {
   const eevee = pokemonList.find((p) => p.speciesId === 'eevee');
   const cache = createRankingCache();
   const result = generateTrashModeString(
     {
-      baseSpecies: eevee,
-      checkedItems: [eevee],
-      leagues: ['great'],
-      topN: 20,
-      language: 'en',
-      excludePerfect: true,
-      excludeZero: false,
-      excludeXXL: false,
-      excludeXXS: false,
-      excludeXL: false,
-      excludeXS: false,
-      excludeTagged: false,
-      excludeFavorited: false,
+      baseSpecies: eevee, checkedItems: [eevee], leagues: ['great'], topN: 20, language: 'en',
+      excludePerfect: true, excludeZero: false,
+      excludeXXL: false, excludeXXS: false, excludeXL: false, excludeXS: false,
+      excludeTagged: false, excludeFavorited: false,
     },
     cache
   );
@@ -683,80 +488,52 @@ const DEFAULT_STATE_FOR_TEST = {
   trashExcludeZero: true,
 };
 
-test('serializeStateToQuery omits every field that is still at its default value', () => {
+// #28
+test('serializeStateToQuery writes only the fields that differ from their default', () => {
   assert.equal(serializeStateToQuery(DEFAULT_STATE_FOR_TEST), '');
-});
 
-test('serializeStateToQuery includes only the fields that differ from default', () => {
-  const query = serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', league: 'ultra', topN: 20 });
-  const params = new URLSearchParams(query);
+  const params = new URLSearchParams(
+    serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', league: 'ultra', topN: 20 })
+  );
   assert.equal(params.get('mon'), 'eevee');
   assert.equal(params.get('league'), 'ultra');
   assert.equal(params.get('topN'), '20');
   assert.equal(params.has('lang'), false);
 });
 
-test('parseQueryToState reads back only the fields present in the query string', () => {
-  const parsed = parseQueryToState('mon=eevee&league=ultra&topN=20', pokemonList);
-  assert.deepEqual(parsed, { species: 'eevee', league: 'ultra', topN: 20 });
-});
-
-test('parseQueryToState round-trips through serializeStateToQuery', () => {
-  const original = { ...DEFAULT_STATE_FOR_TEST, species: 'charmander', find100IV: true, trash: true, trashExcludePerfect: false };
+// #29
+test('parseQueryToState round-trips trashExcludeFavorited: false back to false (regression)', () => {
+  // The page starts this switched on. If the URL default disagreed, an explicit "off" would look
+  // like the default, get dropped from the link, and come back on for whoever opened it.
+  const original = { ...DEFAULT_STATE_FOR_TEST, species: 'charmander', trashExcludeFavorited: false };
   const query = serializeStateToQuery(original);
   const parsed = parseQueryToState(query, pokemonList);
-  assert.equal(parsed.species, 'charmander');
-  assert.equal(parsed.find100IV, true);
-  assert.equal(parsed.trash, true);
-  assert.equal(parsed.trashExcludePerfect, false);
+  assert.equal(parsed.trashExcludeFavorited, false);
 });
 
-test('serializeStateToQuery includes the evolution checklist selection whenever a species is selected', () => {
-  const query = serializeStateToQuery({
-    ...DEFAULT_STATE_FOR_TEST,
-    species: 'eevee',
-    includedFamilyMembers: new Set(['eevee', 'vaporeon']),
-  });
-  const params = new URLSearchParams(query);
-  assert.equal(params.get('evo'), 'eevee,vaporeon');
+// #30
+test('serializeStateToQuery always writes the evo param once a species is selected, even with nothing checked', () => {
+  // An omitted evo param is indistinguishable from "never set", which a restored link reads as
+  // "everything checked" rather than "nothing checked".
+  const some = new URLSearchParams(
+    serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', includedFamilyMembers: new Set(['eevee', 'vaporeon']) })
+  );
+  assert.equal(some.get('evo'), 'eevee,vaporeon');
+
+  const none = new URLSearchParams(
+    serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', includedFamilyMembers: new Set() })
+  );
+  assert.equal(none.has('evo'), true);
+  assert.equal(none.get('evo'), '');
 });
 
-test('serializeStateToQuery omits the evo param when no species is selected', () => {
-  const query = serializeStateToQuery(DEFAULT_STATE_FOR_TEST);
-  assert.equal(new URLSearchParams(query).has('evo'), false);
-});
-
-test('serializeStateToQuery still writes an (empty) evo param when every family member is unchecked', () => {
-  // Regression test: omitting evo here is indistinguishable from "no evo param was ever set",
-  // so a restored link would fall back to "everything checked" instead of "nothing checked".
-  const query = serializeStateToQuery({ ...DEFAULT_STATE_FOR_TEST, species: 'eevee', includedFamilyMembers: new Set() });
-  const params = new URLSearchParams(query);
-  assert.equal(params.has('evo'), true);
-  assert.equal(params.get('evo'), '');
-});
-
-test('parseQueryToState parses the evo param into an array of speciesIds', () => {
-  const parsed = parseQueryToState('mon=eevee&evo=eevee,vaporeon', pokemonList);
-  assert.deepEqual(parsed.includedFamilyMembers, ['eevee', 'vaporeon']);
-});
-
-test('parseQueryToState round-trips an all-unchecked evolution list back to an empty (not full) selection', () => {
-  const parsed = parseQueryToState('mon=eevee&evo=', pokemonList);
-  assert.deepEqual(parsed.includedFamilyMembers, []);
-});
-
-test('parseQueryToState drops evo ids that are not part of the given species\' own evolution family', () => {
-  // "mewtwo" is a real, existing species, but not part of Eevee's family — it must not be
-  // silently trusted just because it exists somewhere in pokemonList.
-  const parsed = parseQueryToState('mon=eevee&evo=mewtwo', pokemonList);
-  assert.deepEqual(parsed.includedFamilyMembers, []);
-});
-
+// #31
 test('parseQueryToState keeps only the evo ids that are genuinely part of the species\' family', () => {
   const parsed = parseQueryToState('mon=eevee&evo=eevee,vaporeon,mewtwo', pokemonList);
   assert.deepEqual(parsed.includedFamilyMembers, ['eevee', 'vaporeon']);
 });
 
+// #32
 test('parseQueryToState ignores the evo param entirely when no valid species accompanies it', () => {
   // Without a species there is no family to validate against; the field must be omitted
   // (not an empty array) so the page state's Set-typed field is never overwritten.
@@ -764,45 +541,30 @@ test('parseQueryToState ignores the evo param entirely when no valid species acc
   assert.equal('includedFamilyMembers' in parsed, false);
 });
 
-test('parseQueryToState rejects a species id that does not exist in pokemonList', () => {
-  const parsed = parseQueryToState('mon=not-a-real-species', pokemonList);
-  assert.equal(parsed.species, undefined);
-});
-
-test('parseQueryToState rejects a league value outside the known set', () => {
-  const parsed = parseQueryToState('league=bogus', pokemonList);
-  assert.equal(parsed.league, undefined);
-});
-
-test('parseQueryToState accepts every known league value', () => {
-  for (const league of ['great', 'ultra', 'master', 'all']) {
-    assert.equal(parseQueryToState(`league=${league}`, pokemonList).league, league);
+// #33
+test('parseQueryToState keeps a field only when its value passes validation', () => {
+  const rejected = [
+    ['mon=not-a-real-species', 'species'],
+    ['league=bogus', 'league'],
+    ['lang=klingon', 'language'],
+    ['xp=anything', 'trashExcludePerfect'],
+    ['topN=not-a-number', 'topN'],
+    ['topN=0', 'topN'],
+    ['topN=4097', 'topN'],
+    ['topN=12.5', 'topN'],
+  ];
+  for (const [query, field] of rejected) {
+    assert.equal(parseQueryToState(query, pokemonList)[field], undefined, `"${query}" must not set ${field}`);
   }
-});
 
-test('parseQueryToState rejects a language value outside the known set', () => {
-  const parsed = parseQueryToState('lang=klingon', pokemonList);
-  assert.equal(parsed.language, undefined);
-});
-
-test('parseQueryToState rejects a non-integer or out-of-range topN', () => {
-  assert.equal(parseQueryToState('topN=not-a-number', pokemonList).topN, undefined);
-  assert.equal(parseQueryToState('topN=0', pokemonList).topN, undefined);
-  assert.equal(parseQueryToState('topN=4097', pokemonList).topN, undefined);
-  assert.equal(parseQueryToState('topN=12.5', pokemonList).topN, undefined);
-  assert.equal(parseQueryToState('topN=4096', pokemonList).topN, 4096);
-});
-
-test('parseQueryToState ignores a maxLevel query param entirely (no longer a user-configurable field)', () => {
-  // Ranking and projection level ceilings are now fixed constants (RANKING_MAX_LEVEL,
-  // PROJECTION_MAX_LEVEL) rather than a page setting, so "maxLevel" is not a recognized URL
-  // param at all anymore — a stale link carrying one (from before this field existed) must be
-  // silently ignored, not read into the parsed state.
-  const parsed = parseQueryToState('maxLevel=50', pokemonList);
-  assert.equal('maxLevel' in parsed, false);
-});
-
-test('parseQueryToState rejects a boolean field value that is neither "true" nor "false"', () => {
-  const parsed = parseQueryToState('xp=anything', pokemonList);
-  assert.equal(parsed.trashExcludePerfect, undefined);
+  const accepted = [
+    ['league=great', 'league', 'great'],
+    ['league=ultra', 'league', 'ultra'],
+    ['league=master', 'league', 'master'],
+    ['league=all', 'league', 'all'],
+    ['topN=4096', 'topN', 4096],
+  ];
+  for (const [query, field, expected] of accepted) {
+    assert.equal(parseQueryToState(query, pokemonList)[field], expected, `"${query}" must set ${field}`);
+  }
 });

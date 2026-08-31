@@ -67,7 +67,7 @@ const state = {
   trashExcludeXL: false,
   trashExcludeXS: false,
   trashExcludeTagged: false,
-  trashExcludeFavorited: false,
+  trashExcludeFavorited: true,
 };
 
 function renderEvolutionChecklist(speciesId, presetSelection) {
