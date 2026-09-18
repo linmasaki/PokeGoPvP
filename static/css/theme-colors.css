@@ -58,4 +58,7 @@
   --rank-mid-bg: rgba(201,173,95,0.18);
   --rank-low: #FF4444;
   --rank-low-bg: rgba(255,68,68,0.24);
+
+  /* Shadow-boosted stat highlight — project-specific, same exception basis as rank-tier above */
+  --shadow-stat: #B478FF;
 }

@@ -81,22 +81,6 @@
   font-size: var(--text-caption);
 }
 
-.btn {
-  background: var(--accent-primary);
-  color: var(--black);
-  border: none;
-  border-radius: var(--radius-none);
-  font-family: var(--font-ui);
-  font-size: var(--text-btn);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-btn);
-  text-transform: uppercase;
-  padding: var(--space-12) var(--btn-padding-accent);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard);
-}
-.btn:hover { background: var(--accent-primary-hover); }
-
 @media (max-width: 768px) {
   .search-string-page {
     padding-left: var(--space-16);

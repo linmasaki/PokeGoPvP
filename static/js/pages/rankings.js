@@ -13,19 +13,15 @@ const MIN_LEVEL = 1;
 const state = {
   species: null,
   league: 'great',
-  ivs: [{ atk: 15, def: 15, hp: 15 }],
+  ivs: [{ atk: 15, def: 15, hp: 15, shadow: false }],
   ivFloor: 0,
   maxLevel: 50,
-  shadow: false,
 };
 
 const leagueTabsContainer = document.getElementById('rankings-league-tabs');
-const ivAtkSelect = document.getElementById('rankings-iv-atk');
-const ivDefSelect = document.getElementById('rankings-iv-def');
-const ivStaSelect = document.getElementById('rankings-iv-sta');
+const ivRowsContainer = document.getElementById('rankings-iv-rows');
 const ivFloorSelect = document.getElementById('rankings-iv-floor');
 const maxLevelSelect = document.getElementById('rankings-max-level');
-const shadowCheckbox = document.getElementById('rankings-shadow');
 
 const emptyState = document.getElementById('rankings-empty-state');
 const resultsBlock = document.getElementById('rankings-results-block');
@@ -48,8 +44,8 @@ function syncTableScrollFocusability() {
 
 window.addEventListener('resize', syncTableScrollFocusability);
 
-function buildRowCells(entry, rankOverride) {
-  const battle = state.shadow ? applyShadowMultiplier(entry.battle) : entry.battle;
+function buildRowCells(entry, rankOverride, shadow) {
+  const battle = shadow ? applyShadowMultiplier(entry.battle) : entry.battle;
   const perfectPercent = computePerfectPercent(entry.statProduct, state.rank1StatProduct);
   return [
     String(rankOverride ?? entry.rank),
@@ -64,14 +60,18 @@ function buildRowCells(entry, rankOverride) {
   ];
 }
 
-function renderRow(entry, rankOverride, tierClass) {
+// Atk/Def are cells 5 and 6 in buildRowCells' return order
+const SHADOW_STAT_CELL_INDICES = new Set([5, 6]);
+
+function renderRow(entry, rankOverride, tierClass, shadow) {
   const tr = document.createElement('tr');
   if (tierClass) tr.className = tierClass;
-  for (const cellText of buildRowCells(entry, rankOverride)) {
+  buildRowCells(entry, rankOverride, shadow).forEach((cellText, i) => {
     const td = document.createElement('td');
     td.textContent = cellText;
+    if (shadow && SHADOW_STAT_CELL_INDICES.has(i)) td.className = 'shadow-stat';
     tr.appendChild(td);
-  }
+  });
   return tr;
 }
 
@@ -146,17 +146,19 @@ function renderQueryResults() {
   clearResults();
   speciesLabel.textContent = speciesName;
 
-  const userIvs = state.ivs[0];
-  const userRank = findAbsoluteRank(ranked, userIvs);
-  if (userRank !== null) {
+  // pinned rows follow input order, not rank order
+  for (const userIvs of state.ivs) {
+    const userRank = findAbsoluteRank(ranked, userIvs);
+    if (userRank === null) continue;
     const userEntry = ranked[userRank - 1];
     const tierClass = getRankTierClass(userRank);
-    pinnedRowContainer.appendChild(renderRow(userEntry, userRank, tierClass));
+    pinnedRowContainer.appendChild(renderRow(userEntry, userRank, tierClass, userIvs.shadow));
   }
 
+  // Top 20 has no associated row, so it always shows raw (non-Shadow) stats
   const top20 = filterAchievableTop(ranked, state.ivFloor, TOP_N);
   for (const entry of top20) {
-    top20Body.appendChild(renderRow(entry, entry.rank, null));
+    top20Body.appendChild(renderRow(entry, entry.rank, null, false));
   }
 
   showResults();
@@ -194,18 +196,82 @@ leagueTabsContainer.addEventListener('click', (event) => {
   runQuery();
 });
 
-ivAtkSelect.addEventListener('change', () => {
-  state.ivs[0].atk = Number(ivAtkSelect.value);
-  runQuery();
-});
-ivDefSelect.addEventListener('change', () => {
-  state.ivs[0].def = Number(ivDefSelect.value);
-  runQuery();
-});
-ivStaSelect.addEventListener('change', () => {
-  state.ivs[0].hp = Number(ivStaSelect.value);
-  runQuery();
-});
+const IV_FIELDS = [
+  ['atk', 'Atk'],
+  ['def', 'Def'],
+  ['hp', 'Sta'],
+];
+
+function createIvSelect(fieldLabel, value, onChange) {
+  const select = document.createElement('select');
+  select.className = 'select';
+  select.setAttribute('aria-label', fieldLabel);
+  for (let i = 15; i >= 0; i--) {
+    const option = document.createElement('option');
+    option.value = String(i);
+    option.textContent = String(i);
+    if (i === value) option.selected = true;
+    select.appendChild(option);
+  }
+  select.addEventListener('change', () => onChange(Number(select.value)));
+  return select;
+}
+
+// full rebuild on every add/remove — list is always small, no need to diff it
+function renderIvRows() {
+  ivRowsContainer.innerHTML = '';
+
+  state.ivs.forEach((ivs, index) => {
+    const row = document.createElement('div');
+    row.className = 'iv-row';
+
+    const shadowCheckbox = document.createElement('input');
+    shadowCheckbox.type = 'checkbox';
+    shadowCheckbox.className = 'checkbox';
+    shadowCheckbox.checked = ivs.shadow;
+    shadowCheckbox.setAttribute('aria-label', `第 ${index + 1} 列 Shadow 加成`);
+    shadowCheckbox.addEventListener('change', () => {
+      // Shadow is display-only (doesn't affect statProduct/ranking), so re-render instead of re-ranking
+      state.ivs[index].shadow = shadowCheckbox.checked;
+      renderQueryResults();
+    });
+    row.appendChild(shadowCheckbox);
+
+    for (const [field, label] of IV_FIELDS) {
+      const select = createIvSelect(`第 ${index + 1} 列 ${label}`, ivs[field], (value) => {
+        state.ivs[index][field] = value;
+        renderQueryResults();
+      });
+      row.appendChild(select);
+    }
+
+    // first row always adds; every other row removes itself
+    const isFirstRow = index === 0;
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'iv-row__remove';
+    toggleBtn.textContent = isFirstRow ? '+' : '−';
+    toggleBtn.setAttribute('aria-label', isFirstRow ? '新增一列 IV' : `移除第 ${index + 1} 列 IV`);
+    toggleBtn.addEventListener('click', () => {
+      if (isFirstRow) {
+        state.ivs.push({ atk: 15, def: 15, hp: 15, shadow: false });
+      } else {
+        state.ivs.splice(index, 1);
+      }
+      renderIvRows();
+      renderQueryResults();
+      // clicked button no longer exists post-rebuild — refocus the row that slid into its place
+      const rows = ivRowsContainer.children;
+      const next = rows[index] ?? rows[rows.length - 1];
+      next.querySelector('.iv-row__remove').focus();
+    });
+    row.appendChild(toggleBtn);
+
+    ivRowsContainer.appendChild(row);
+  });
+}
+
+renderIvRows();
 
 ivFloorSelect.addEventListener('change', () => {
   state.ivFloor = Number(ivFloorSelect.value);
@@ -215,14 +281,6 @@ ivFloorSelect.addEventListener('change', () => {
 maxLevelSelect.addEventListener('change', () => {
   state.maxLevel = Number(maxLevelSelect.value);
   runQuery();
-});
-
-shadowCheckbox.addEventListener('change', () => {
-  // Shadow only scales the displayed Atk/Def (x1.2 / x0.8) — it does not touch statProduct, so
-  // the ranking is identical either way. Re-render the existing pass instead of re-running the
-  // engine over all 4096 IV combos.
-  state.shadow = shadowCheckbox.checked;
-  renderQueryResults();
 });
 
 loadPokemonList()

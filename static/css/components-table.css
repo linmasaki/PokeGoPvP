@@ -26,12 +26,11 @@
 .rankings-table td:first-child {
   text-align: right;
 }
-.rankings-table tbody tr:nth-child(even) { background: var(--surface-elevated); }
+/* scoped to top20 only */
+#rankings-top20-body tr:nth-child(even) { background: var(--surface-elevated); }
 .rankings-table tbody tr:last-child td { border-bottom: none; }
 
-/* Rank-tier highlight — only ever applied to the pinned "your IV" row, never
-   to Top 20 rows (Top 20 is always a curated subset, uniform highlighting
-   there would carry no information). */
+/* rank-tier highlight applies only to pinned rows, never Top 20 */
 .rank-tier--top100 { background: var(--rank-top100-bg); }
 .rank-tier--top100 td:first-child {
   border-left: 3px solid var(--rank-top100);
@@ -48,6 +47,11 @@
 .rank-tier--low td:first-child {
   border-left: 3px solid var(--rank-low);
   color: var(--rank-low);
+  font-weight: var(--weight-semibold);
+}
+
+.rankings-table tbody td.shadow-stat {
+  color: var(--shadow-stat);
   font-weight: var(--weight-semibold);
 }
 

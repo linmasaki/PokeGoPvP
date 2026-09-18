@@ -6,7 +6,7 @@
   color: var(--text-on-dark-primary);
   font-family: var(--font-ui);
   font-size: var(--text-body);
-  padding: var(--space-8) var(--space-12);
+  padding: var(--space-4) var(--space-8);
   width: 100%;
 }
 .input::placeholder { color: var(--text-on-dark-muted); }
@@ -17,6 +17,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
 }
 
 .checkbox { accent-color: var(--accent-primary); width: 16px; height: 16px; }
@@ -33,7 +34,7 @@
   font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: var(--ls-label);
-  padding: var(--space-8) var(--space-16);
+  padding: var(--space-4) var(--space-16);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
 }
@@ -108,3 +109,19 @@
   color: var(--text-on-dark-muted);
   font-size: var(--text-micro);
 }
+
+.btn {
+  background: var(--accent-primary);
+  color: var(--black);
+  border: none;
+  border-radius: var(--radius-none);
+  font-family: var(--font-ui);
+  font-size: var(--text-btn);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-btn);
+  text-transform: uppercase;
+  padding: var(--space-12) var(--btn-padding-accent);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+.btn:hover { background: var(--accent-primary-hover); }

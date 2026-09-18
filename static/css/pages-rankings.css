@@ -5,7 +5,7 @@
 }
 
 .rankings-controls {
-  position: sticky;
+  position: static; /* 改成 sticky 即可恢復凍結在頂部 */
   top: var(--site-nav-height, 71px);
   z-index: 5;
   background: var(--surface-canvas);
@@ -17,13 +17,109 @@
 .rankings-controls__row {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: var(--space-16);
 }
 
 .rankings-search {
-  flex: 1.4;
+  flex: 0 1 420px;
   min-width: 0;
   position: relative;
+}
+
+/* search box absorbs overflow so the league labels don't wrap */
+.rankings-controls__row .league-tabs {
+  flex-shrink: 0;
+}
+
+.rankings-controls__extra {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: var(--space-16);
+}
+
+/* fixed widths + no-wrap label: .select's overflow:hidden has no intrinsic min-width, so
+   without these it shrinks to an unreadable sliver before the row wraps */
+.rankings-controls__extra .field__label {
+  white-space: nowrap;
+}
+.rankings-controls__extra #rankings-iv-floor {
+  width: 160px;
+}
+.rankings-controls__extra #rankings-max-level {
+  width: 72px;
+}
+
+/* shrunk to keep the stacked label+select close in height to the row's single-line controls */
+.rankings-controls__extra .field {
+  gap: var(--space-2);
+}
+.rankings-controls__extra .select {
+  font-size: var(--text-caption);
+  padding: var(--space-2) var(--space-4);
+}
+
+.iv-compare {
+  margin-top: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* trailing spacer matches .iv-row__remove's width so labels stay aligned with the selects below */
+.iv-row-header {
+  display: flex;
+  gap: var(--space-8);
+}
+.iv-row-header .iv-input__label {
+  width: 72px;
+  text-align: center;
+}
+.iv-row-header__spacer {
+  width: 30px;
+}
+/* transform scales visually without affecting layout, so the row height/label positions stay put */
+.iv-row-header__shadow-spacer {
+  width: 16px;
+  height: 16px;
+  transform: scale(2.2);
+}
+
+.iv-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.iv-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.iv-row .select {
+  width: 72px;
+  padding: var(--space-2) var(--space-4);
+}
+
+.iv-row__remove {
+  background: transparent;
+  border: var(--border-hairline);
+  color: var(--text-on-dark-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--text-caption);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+}
+.iv-row__remove:hover {
+  color: var(--text-on-dark-primary);
+  border-color: var(--border-on-dark);
 }
 
 @media (max-width: 768px) {
@@ -36,16 +132,13 @@
     padding-right: var(--space-16);
     margin: 0 calc(-1 * var(--space-16));
   }
-  .rankings-controls__row {
-    flex-wrap: wrap;
-  }
   .rankings-search {
     flex: 1 1 100%;
   }
   .league-tabs {
     flex: 1 1 100%;
   }
-  .iv-inputs {
+  .rankings-controls__extra {
     flex: 1 1 100%;
   }
 }
